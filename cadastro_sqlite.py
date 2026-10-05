@@ -34,7 +34,7 @@ def conectar_banco():
 def mostrar_menu():
     """Exibe o menu principal do sistema SQLite."""
     print("\n" + "=" * 50)
-    print("  SISTEMA DE CADASTRO DE DOCES (SQLite)")
+    print("  SISTEMA DE CADASTRO DE DOCES")
     print("=" * 50)
     print("1. Cadastrar doce")
     print("2. Listar doces")
@@ -86,7 +86,7 @@ def escolher_id(conn, acao):
 def cadastrar_doce():
     """Cadastra um novo doce no banco SQLite com validacoes. (Create)"""
     print("\n" + "-" * 40)
-    print("  CADASTRO DE NOVO DOCE (SQLite)")
+    print("  CADASTRO DE NOVO DOCE ")
     print("-" * 40)
 
     conn = conectar_banco()
@@ -149,19 +149,6 @@ def listar_doces():
         print(f"  Preco: R$ {reg['preco']:.2f}")
         print("-" * 40)
 
-    estatisticas = conn.execute(
-        'SELECT COUNT(*) AS total, AVG(preco) AS media,'
-        ' MIN(preco) AS menor, MAX(preco) AS maior FROM doces'
-    ).fetchone()
-    print("\nEstatisticas:")
-    print(f"  Total: {estatisticas['total']} doces")
-    print(f"  Preco medio: R$ {estatisticas['media']:.2f}")
-    print(f"  Mais barato: R$ {estatisticas['menor']:.2f}")
-    print(f"  Mais caro: R$ {estatisticas['maior']:.2f}")
-
-    conn.close()
-    pausar()
-
 
 def buscar_doce():
     """Busca doces no banco por nome ou por preco maximo. (Read)"""
@@ -175,10 +162,10 @@ def buscar_doce():
         return
 
     print("\n" + "-" * 40)
-    print("  BUSCAR DOCE (SQLite)")
+    print("  BUSCAR DOCE")
     print("-" * 40)
     print("1. Buscar por nome")
-    print("2. Buscar por preco maximo")
+    print("2. Buscar por preco")
 
     while True:
         opcao = input("\nEscolha (1-2): ").strip()
@@ -194,12 +181,12 @@ def buscar_doce():
         ).fetchall()
     else:
         while True:
-            termo = input("Digite o preco maximo: ").strip()
+            termo = input("Digite o preco: ").strip()
             if validar_preco(termo):
                 break
             print("Erro: Preco deve ser um numero maior que zero!")
         encontrados = conn.execute(
-            'SELECT * FROM doces WHERE preco <= ? ORDER BY preco',
+            'SELECT * FROM doces WHERE preco = ? ORDER BY preco',
             (float(termo.replace(",", ".")),)
         ).fetchall()
 
