@@ -149,6 +149,9 @@ def listar_doces():
         print(f"  Preco: R$ {reg['preco']:.2f}")
         print("-" * 40)
 
+        conn.close()
+        pausar()
+
 
 def buscar_doce():
     """Busca doces no banco por nome ou por preco maximo. (Read)"""

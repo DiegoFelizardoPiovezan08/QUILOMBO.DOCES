@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block titulo %}Doces cadastrados{% endblock %}
+
+{% block conteudo %}
+  <h2>Doces cadastrados</h2>
+
+  {% if msg %}
+    <p class="sucesso">{{ msg }}</p>
+  {% endif %}
+
+  <p><a class="botao" href="{{ url_for('novo') }}">+ Cadastrar novo doce</a></p>
+
+  {% if doces %}
+    <p>{{ doces|length }} registro(s) no banco.</p>
+    <table>
+      <tr>
+        <th>Nome</th>
+        <th>Preco</th>
+      </tr>
+      {% for p in doces %}
+      <tr>
+        <td><a href="{{ url_for('detalhe', id_doce=p['id']) }}">{{ p['nome'] }}</a></td>
+        <td>{{ p['preco'] }} </td>
+        <td>
+          <a href="{{ url_for('editar', id_doce=p['id']) }}">editar</a>
+          <form method="post" action="{{ url_for('excluir', id_doce=p['id']) }}"
+                onsubmit="return confirm('Excluir {{ p['nome'] }}?');">
+            <button type="submit" class="link-perigo">excluir</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p class="vazio">Nenhum doce cadastrado ainda.</p>
+  {% endif %}
+{% endblock %}

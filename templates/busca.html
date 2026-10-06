@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block titulo %}Buscar doces{% endblock %}
+
+{% block conteudo %}
+  <h2>Buscar doces</h2>
+
+  <form method="get" action="{{ url_for('buscar') }}">
+    <input type="text" name="termo" value="{{ termo }}" placeholder="Digite um doce...">
+    <button type="submit">Buscar</button>
+  </form>
+
+  {% if not termo %}
+    <p class="vazio">Digite um doce para buscar.</p>
+  {% elif doces %}
+    <p>{{ doces|length }} resultado(s) para "{{ termo }}":</p>
+    <ul>
+      {% for p in doces %}
+        <li>
+          <a href="{{ url_for('detalhe', id_doce=p['id']) }}">{{ p['nome'] }}</a>
+          — {{ p['preco'] }}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="vazio">Nenhum doce foi encontrado com "{{ termo }}".</p>
+  {% endif %}
+{% endblock %}

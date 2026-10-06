@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>{% block titulo %}Sistema de Cadastro{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}">
+</head>
+<body>
+
+  <header>
+    <h1>Sistema de Cadastro</h1>
+    <nav>
+      <a href="{{ url_for('listar') }}">Lista</a>
+      <a href="{{ url_for('buscar') }}">Buscar</a>
+      <a href="{{ url_for('sobre') }}">Sobre</a>
+    </nav>
+  </header>
+
+  <main>
+    {% block conteudo %}{% endblock %}
+  </main>
+
+  <footer>
+    Quilombo Doces
+  </footer>
+
+</body>
+</html>
