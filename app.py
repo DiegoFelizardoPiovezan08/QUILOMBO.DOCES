@@ -2,12 +2,16 @@
 # Aplicacao web com Flask — CRUD completo de doces pelo navegador
 # Projeto: Quilombo Doces
 
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template, redirect, url_for,session
 from cadastro_sqlite import conectar_banco, validar_preco
+from urllib.parse import quote
+
+
 
 app = Flask(__name__)
 
-
+app.secret_key = "Neymar"
+WHATSAPP = "5511998325340"  # seu número com DDI + DDD
 # --------------------------------------------------------------- LEITURA (GET)
 
 @app.route("/")
@@ -204,5 +208,59 @@ def pagina_nao_encontrada(erro):
                            mensagem="Confira o endereco digitado."), 404
 
 
+
+# --------------------------------------------------------------- CARRINHO
+
+@app.route("/carrinho/adicionar/<int:id>", methods=["POST"])
+def adicionar_carrinho(id):
+    carrinho = session.get("carrinho", {})
+    chave = str(id)
+    carrinho[chave] = carrinho.get(chave, 0) + 1
+    session["carrinho"] = carrinho
+    return redirect(request.referrer or url_for("carrinho"))
+
+
+@app.route("/carrinho")
+def carrinho():
+    itens = []
+    total = 0
+
+    conn = conectar_banco()
+    for chave, qtd in session.get("carrinho", {}).items():
+        doce = conn.execute('SELECT * FROM doces WHERE id = ?',
+                            (int(chave),)).fetchone()
+        if doce is None:      # doce foi excluído depois de entrar no carrinho
+            continue
+        subtotal = doce["preco"] * qtd
+        total += subtotal
+        itens.append({"id": doce["id"], "nome": doce["nome"],
+                      "preco": doce["preco"], "qtd": qtd, "subtotal": subtotal})
+    conn.close()
+
+    linhas = ["Olá! Gostaria de fazer este pedido:"]
+    for i in itens:
+        linhas.append(f"- {i['qtd']}x {i['nome']} (R$ {i['subtotal']:.2f})")
+    linhas.append(f"Total: R$ {total:.2f}")
+    link_whatsapp = f"https://wa.me/{WHATSAPP}?text={quote(chr(10).join(linhas))}"
+
+    return render_template("carrinho.html", itens=itens, total=total,
+                           link_whatsapp=link_whatsapp)
+
+
+@app.route("/carrinho/remover/<int:id>", methods=["POST"])
+def remover_carrinho(id):
+    carrinho = session.get("carrinho", {})
+    carrinho.pop(str(id), None)
+    session["carrinho"] = carrinho
+    return redirect(url_for("carrinho"))
+
+
+@app.route("/carrinho/limpar", methods=["POST"])
+def limpar_carrinho():
+    session.pop("carrinho", None)
+    return redirect(url_for("carrinho"))
+
 if __name__ == "__main__":
     app.run(debug=True)
+
+

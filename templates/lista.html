@@ -28,6 +28,9 @@
                 onsubmit="return confirm('Excluir {{ p['nome'] }}?');">
             <button type="submit" class="link-perigo">excluir</button>
           </form>
+            <form action="{{ url_for('adicionar_carrinho', id=p['id']) }}" method="post" style="display:inline">
+                <button type="submit" class="btn-carrinho">Adicionar ao carrinho</button>
+            </form>
         </td>
       </tr>
       {% endfor %}
