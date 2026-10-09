@@ -8,7 +8,7 @@ from cadastro_sqlite import (
     editar_doce, excluir_doce
 )
  
- 
+#mostra o titulo inicial ao entrar na pagina
 def mostrar_titulo():
     """Exibe o titulo inicial do sistema."""
     print("\n" + "=" * 50)
@@ -16,7 +16,8 @@ def mostrar_titulo():
     print(" Sistema de Cadastro de Doces")
     print("=" * 50)
  
- 
+
+ #escolha de opcao quando for cadastrar o doce
 def modo_sqlite():
     """Loop do modo SQLite — CRUD completo."""
     while True:
@@ -37,7 +38,7 @@ def modo_sqlite():
         else:
             print("Opcao invalida!")
  
- 
+#quando encerra o sistema
 def main():
     """Funcao principal."""
     try:

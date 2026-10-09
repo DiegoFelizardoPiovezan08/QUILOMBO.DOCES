@@ -22,7 +22,7 @@ def listar():
         'SELECT * FROM doces ORDER BY nome').fetchall()
     conn.close()
 
-    # a mensagem de sucesso chega pela URL, apos o redirect
+    #a mensagem de sucesso chega pela URL, apos o redirect
     return render_template("lista.html", doces=doces,
                            msg=request.args.get("msg", ""))
 

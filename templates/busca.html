@@ -3,25 +3,34 @@
 {% block titulo %}Buscar doces{% endblock %}
 
 {% block conteudo %}
+  <!-- titulo na aba buscar -->
   <h2>Buscar doces</h2>
 
   <form method="get" action="{{ url_for('buscar') }}">
+    <!-- feito para inserir o nome do doce e o botao -->
     <input type="text" name="termo" value="{{ termo }}" placeholder="Digite um doce...">
     <button type="submit">Buscar</button>
   </form>
 
+  <!-- se a pessoa nao digitou nada, ele pede para digitar -->
   {% if not termo %}
     <p class="vazio">Digite um doce para buscar.</p>
+  <!-- depois da busca (suponda que encontrou algum doce) -->
   {% elif doces %}
+  <!-- quantos doces foram encontrados e o nome do doce -->
     <p>{{ doces|length }} resultado(s) para "{{ termo }}":</p>
+    <!-- lista com os resultado (ul e li) -->
     <ul>
       {% for p in doces %}
         <li>
+          <!-- cria o link para o doce -->
           <a href="{{ url_for('detalhe', id_doce=p['id']) }}">{{ p['nome'] }}</a>
+          <!-- mostra o preco -->
           — {{ p['preco'] }}
         </li>
       {% endfor %}
     </ul>
+    <!-- se digitou algo e não gerou nada -->
   {% else %}
     <p class="vazio">Nenhum doce foi encontrado com "{{ termo }}".</p>
   {% endif %}

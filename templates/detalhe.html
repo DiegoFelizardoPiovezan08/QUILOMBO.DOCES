@@ -3,20 +3,24 @@
 {% block titulo %}{{ doce['nome'] }}{% endblock %}
 
 {% block conteudo %}
+  <!-- titulo do nome do doce -->
   <h2>{{ doce['nome'] }}</h2>
 
   <ul class="detalhe">
+    <!-- ID e preco do doce -->
     <li><b>ID:</b> {{ doce['id'] }}</li>
     <li><b>preco:</b> {{ doce['preco'] }} </li>
   </ul>
 
   <p>
+    <!-- botão para editar as informações dos doces e/ou voltar para a lista -->
     <a class="botao" href="{{ url_for('editar', id_doce=doce['id']) }}">Editar</a>
     <a href="{{ url_for('listar') }}">Voltar para a lista</a>
   </p>
 
+  <!-- botão para excluir as informações dos doces e/ou voltar para a lista -->
   <form method="post" action="{{ url_for('excluir', id_doce=doce['id']) }}"
-        onsubmit="return confirm('Excluir {{ doce['nome'] }}? Esta acao nao pode ser desfeita.');">
+        onsubmit='return confirm({{ ("Excluir " ~ doce["nome"] ~ "? Esta acao nao pode ser desfeita.")|tojson }});';
     <button type="submit" class="perigo">Excluir este registro</button>
   </form>
 {% endblock %}

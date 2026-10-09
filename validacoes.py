@@ -4,12 +4,12 @@
 
 import math
 
-
+#valida nome
 def validar_nome(nome):
     """Valida se o nome do doce tem pelo menos 2 caracteres."""
     return len(nome.strip()) >= 2
 
-
+#valida preco
 def validar_preco(preco_str):
     """Valida se o preco e um numero maior que zero (aceita 18.5 ou 18,50)."""
     try:
@@ -18,7 +18,7 @@ def validar_preco(preco_str):
     except ValueError:
         return False
 
-
+#verifica se doce existe
 def doce_ja_existe(nome, lista_doces):
     """Verifica se o doce ja esta cadastrado na lista."""
     for doce in lista_doces:

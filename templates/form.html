@@ -1,3 +1,4 @@
+<!-- quando a pessoa clica no cadastrar novo doce -->
 {% extends "base.html" %}
 
 {% block titulo %}{{ titulo }}{% endblock %}
@@ -12,18 +13,21 @@
   <form method="post" action="{{ acao }}">
 
     <p>
+      <!-- digita o nome e ve se da erro -->
       <label for="nome">Nome</label>
       <input type="text" id="nome" name="nome" value="{{ dados.get('nome', '') }}">
       {% if erros.get('nome') %}<span class="erro">{{ erros['nome'] }}</span>{% endif %}
     </p>
 
     <p>
+      <!-- digita o preco e ve se da erro -->
       <label for="preco">Preço</label>
       <input type="text" id="preco" name="preco" value="{{ dados.get('preco', '') }}">
       {% if erros.get('preco') %}<span class="erro">{{ erros['preco'] }}</span>{% endif %}
     </p>
 
     <p>
+      <!--botoes salvar/cancelar -->
       <button type="submit">Salvar</button>
       <a href="{{ url_for('listar') }}">Cancelar</a>
     </p>

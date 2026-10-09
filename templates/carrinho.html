@@ -3,20 +3,24 @@
 {% block titulo %}Carrinho{% endblock %}
 
 {% block conteudo %}
+<!-- titulo na aba carrinhp -->
   <h2>Meu carrinho</h2>
 
   {% if itens %}
     <table>
       <tr>
+        <!-- Itens que aparecem no carrinho -->
         <th>Doce</th><th>Qtd</th><th>Preço</th><th>Subtotal</th><th></th>
       </tr>
       {% for item in itens %}
       <tr>
+        <!-- mostra os valores -->
         <td>{{ item.nome }}</td>
         <td>{{ item.qtd }}</td>
         <td>R$ {{ "%.2f"|format(item.preco) }}</td>
         <td>R$ {{ "%.2f"|format(item.subtotal) }}</td>
         <td>
+          <!-- Caso deseje remover algo do carrinho e o botão -->
           <form action="{{ url_for('remover_carrinho', id=item.id) }}" method="post">
             <button type="submit">Remover</button>
           </form>
@@ -25,12 +29,15 @@
       {% endfor %}
     </table>
 
+    <!-- Total -->
     <h3>Total: R$ {{ "%.2f"|format(total) }}</h3>
 
+    <!-- terminar pedido pelo whatsapp -->
     <a class="btn-whatsapp" href="{{ link_whatsapp }}" target="_blank">
       Finalizar pedido pelo WhatsApp
     </a>
 
+    <!-- feito para limpar o carrinho e botao -->
     <form action="{{ url_for('limpar_carrinho') }}" method="post">
       <button type="submit">Esvaziar carrinho</button>
     </form>

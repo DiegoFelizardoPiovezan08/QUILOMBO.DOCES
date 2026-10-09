@@ -1,16 +1,20 @@
+<!-- aba lista -->
 {% extends "base.html" %}
 
 {% block titulo %}Doces cadastrados{% endblock %}
 
 {% block conteudo %}
+<!-- titulo da aba lista  -->
   <h2>Doces cadastrados</h2>
 
   {% if msg %}
     <p class="sucesso">{{ msg }}</p>
   {% endif %}
 
+  <!-- botao para cadastrar novo doce -->
   <p><a class="botao" href="{{ url_for('novo') }}">+ Cadastrar novo doce</a></p>
 
+  <!-- mostra os doces cadastrados no banco de dados -->
   {% if doces %}
     <p>{{ doces|length }} registro(s) no banco.</p>
     <table>
@@ -23,11 +27,13 @@
         <td><a href="{{ url_for('detalhe', id_doce=p['id']) }}">{{ p['nome'] }}</a></td>
         <td>{{ p['preco'] }} </td>
         <td>
+          <!-- caso deseje editar/excluir -->
           <a href="{{ url_for('editar', id_doce=p['id']) }}">editar</a>
           <form method="post" action="{{ url_for('excluir', id_doce=p['id']) }}"
                 onsubmit="return confirm('Excluir {{ p['nome'] }}?');">
             <button type="submit" class="link-perigo">excluir</button>
           </form>
+          <!-- caso deseje adicionar no carrinho -->
             <form action="{{ url_for('adicionar_carrinho', id=p['id']) }}" method="post" style="display:inline">
                 <button type="submit" class="btn-carrinho">Adicionar ao carrinho</button>
             </form>
@@ -36,6 +42,7 @@
       {% endfor %}
     </table>
   {% else %}
+  <!--se nao tiver nenhum doce cadastrado ainda -->
     <p class="vazio">Nenhum doce cadastrado ainda.</p>
   {% endif %}
 {% endblock %}

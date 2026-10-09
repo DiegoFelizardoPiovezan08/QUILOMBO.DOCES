@@ -5,7 +5,7 @@
 import sqlite3
 import os
 
-
+#valida se valor é um preço validp
 def validar_preco(texto):
     """Retorna True se o texto for um preco valido (numero maior que zero)."""
     try:
@@ -13,7 +13,7 @@ def validar_preco(texto):
     except ValueError:
         return False
 
-
+#cria a tabela e faz o usuario inserir o id, nome e preço
 def conectar_banco():
     """Conecta ao banco SQLite e cria a tabela se nao existir."""
     os.makedirs('dados', exist_ok=True)
@@ -49,22 +49,25 @@ def pausar():
     """Pausa a execucao aguardando ENTER."""
     input("\nPressione ENTER para continuar...")
 
-
+#procura se o id existe a partir da ordem de cadastro
 def escolher_id(conn, acao):
     """Mostra os registros e devolve o id escolhido (ou None se cancelar)."""
     registros = conn.execute(
         'SELECT id, nome, preco FROM doces ORDER BY id').fetchall()
 
+    #se não existir nenhum registro
     if len(registros) == 0:
         print("\nNenhum doce cadastrado.")
         return None
 
+    #procurar doce pelo nome
     print(f"\nEscolha qual doce deseja {acao}:")
     print("-" * 50)
     for reg in registros:
         print(f"  {reg['id']} — {reg['nome']} (R$ {reg['preco']:.2f})")
     print("-" * 50)
 
+    #se o id nao existir fica invalido ou cancela a operação
     escolha = input("\nDigite o ID (ou ENTER para cancelar): ").strip()
     if escolha == "":
         print("Operacao cancelada.")
@@ -91,6 +94,7 @@ def cadastrar_doce():
 
     conn = conectar_banco()
 
+    #verifica se o doce segue as especificações de tamanho ou se ja esta cadastrado
     while True:
         nome = input("Nome do doce: ").strip()
         if len(nome) < 2:
@@ -105,6 +109,7 @@ def cadastrar_doce():
             continue
         break
 
+    #permite que o preço seja escrita forma que o usuário quiser e que seja > 0
     while True:
         preco_str = input("Preco (exemplo: 18,50): ").strip()
         if validar_preco(preco_str):
@@ -112,6 +117,7 @@ def cadastrar_doce():
             break
         print("Erro: Preco deve ser um numero maior que zero!")
 
+    #cadastra o doce e verifica os erros
     try:
         conn.execute(
             'INSERT INTO doces (nome, preco) VALUES (?, ?)',
@@ -133,12 +139,14 @@ def listar_doces():
 
     registros = conn.execute('SELECT * FROM doces ORDER BY nome').fetchall()
 
+    #verifica se exsite algum doce registro
     if len(registros) == 0:
         print("\nNenhum doce cadastrado ainda.")
         conn.close()
         pausar()
         return
-
+    
+    #lista os doces na tabela
     print("\n" + "-" * 60)
     print(f"  LISTA DE DOCES CADASTRADOS ({len(registros)} registros)")
     print("-" * 60)
@@ -157,6 +165,7 @@ def buscar_doce():
     """Busca doces no banco por nome ou por preco maximo. (Read)"""
     conn = conectar_banco()
 
+    #verifica se possui algum doce no registro
     total = conn.execute('SELECT COUNT(*) FROM doces').fetchone()[0]
     if total == 0:
         print("\nNenhum doce cadastrado para buscar.")
@@ -164,24 +173,28 @@ def buscar_doce():
         pausar()
         return
 
+    #procura os doces pelo nome e/ou preço
     print("\n" + "-" * 40)
     print("  BUSCAR DOCE")
     print("-" * 40)
     print("1. Buscar por nome")
     print("2. Buscar por preco")
 
+    #verifica se é uma opção válida
     while True:
         opcao = input("\nEscolha (1-2): ").strip()
         if opcao in ['1', '2']:
             break
         print("Opcao invalida! Escolha 1 ou 2.")
 
+    #se digitar 1 --> procura pelo nome
     if opcao == '1':
         termo = input("Digite o nome para buscar: ").strip().lower()
         encontrados = conn.execute(
             'SELECT * FROM doces WHERE LOWER(nome) LIKE ? ORDER BY nome',
             (f'%{termo}%',)
         ).fetchall()
+    #se digitar 2 --> procura pelo preço, verifica se é < 0
     else:
         while True:
             termo = input("Digite o preco: ").strip()
@@ -193,6 +206,7 @@ def buscar_doce():
             (float(termo.replace(",", ".")),)
         ).fetchall()
 
+    #caso não exista doces
     if len(encontrados) == 0:
         print(f"\nNenhum doce encontrado com '{termo}'")
     else:
@@ -219,16 +233,19 @@ def editar_doce():
     doce = conn.execute('SELECT * FROM doces WHERE id = ?',
                         (id_escolhido,)).fetchone()
 
+    #edita os valores dos produtos
     print("\n" + "-" * 40)
     print(f"  EDITANDO: {doce['nome']}")
     print("-" * 40)
     print("Deixe em branco para manter o valor atual.\n")
 
     while True:
+        #faz com que o novo nome se torne o oficial
         novo_nome = input(f"Nome [{doce['nome']}]: ").strip()
         if novo_nome == "":
             novo_nome = doce['nome']
             break
+        #avalia se tem mais de 2 caracteres
         if len(novo_nome) < 2:
             print("Erro: Nome deve ter pelo menos 2 caracteres!")
             continue
@@ -237,6 +254,7 @@ def editar_doce():
             'SELECT id FROM doces WHERE LOWER(nome) = ? AND id <> ?',
             (novo_nome.lower(), id_escolhido)
         ).fetchone()
+        #se ja existir o mesmo doce da erro
         if existente:
             print("Erro: Ja existe outro doce com esse nome!")
             continue
@@ -244,10 +262,12 @@ def editar_doce():
         break
 
     while True:
+        #o novo preço se torna o oficial
         novo_preco = input(f"Preco [{doce['preco']:.2f}]: ").strip()
         if novo_preco == "":
             novo_preco = doce['preco']
             break
+        #valida o preço
         if validar_preco(novo_preco):
             novo_preco = round(float(novo_preco.replace(",", ".")), 2)
             break
@@ -259,6 +279,7 @@ def editar_doce():
             (novo_nome, novo_preco, id_escolhido)
         )
         conn.commit()
+        #mostra se deu certo ao atualizar o nome
         print(f"\nDados de '{novo_nome}' atualizados com sucesso!")
     except sqlite3.Error as e:
         print(f"\nErro ao atualizar no banco: {e}")
@@ -281,6 +302,7 @@ def excluir_doce():
     doce = conn.execute('SELECT * FROM doces WHERE id = ?',
                         (id_escolhido,)).fetchone()
 
+    #exclui algum registro
     print("\n" + "-" * 40)
     print("  ATENCAO — voce vai EXCLUIR o registro:")
     print("-" * 40)
@@ -289,6 +311,7 @@ def excluir_doce():
     print("-" * 40)
     print("Esta acao NAO pode ser desfeita.")
 
+    #para nao ocorrer erros ele garante que a pessoa realmente quer excluir
     confirmacao = input("\nConfirma a exclusao? (s/N): ").strip().lower()
 
     if confirmacao != "s":
