@@ -1,0 +1,29 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}{{ doce['nome'] }}{% endblock %}
+
+{% block conteudo %}
+
+  <p class="voltar"><a href="{{ url_for('loja') }}">&larr; Voltar aos doces</a></p>
+
+  <section class="produto">
+    <!-- sem foto ainda: mostra a inicial do doce -->
+    <div class="produto-img">{{ doce['nome'][0]|upper }}</div>
+
+    <div class="produto-info">
+      <h1>{{ doce['nome'] }}</h1>
+      <p class="preco preco-grande">R$ {{ doce['preco']|brl }}</p>
+
+      <form method="post" action="{{ url_for('loja_adicionar', id_doce=doce['id']) }}">
+        <label for="quantidade">Quantidade</label>
+        <input type="number" id="quantidade" name="quantidade"
+               value="1" min="1" max="99">
+
+        <button type="submit" class="btn btn-principal btn-grande">Adicionar ao carrinho</button>
+      </form>
+
+      <p class="dica">Você finaliza o pedido pelo WhatsApp, direto com a gente.</p>
+    </div>
+  </section>
+
+{% endblock %}

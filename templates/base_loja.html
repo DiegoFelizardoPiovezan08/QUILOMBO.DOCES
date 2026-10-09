@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Nossos doces{% endblock %} | Quilombo Doces</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='loja.css') }}">
+</head>
+<body>
+
+  <!-- topo: logo, busca e carrinho -->
+  <header class="topo">
+    <div class="topo-conteudo">
+      <a class="logo" href="{{ url_for('loja') }}">Quilombo <span>Doces</span></a>
+
+      <form class="busca-topo" method="get" action="{{ url_for('loja') }}">
+        <input type="search" name="termo" value="{{ termo|default('') }}"
+               placeholder="Buscar doces...">
+        <button type="submit">Buscar</button>
+      </form>
+
+      <a class="carrinho-link" href="{{ url_for('loja_carrinho') }}">
+        Carrinho
+        {% if qtd_carrinho %}<span class="contador">{{ qtd_carrinho }}</span>{% endif %}
+      </a>
+    </div>
+  </header>
+
+  <main class="conteudo">
+    <!-- avisos, como "Brigadeiro adicionado ao carrinho!" -->
+    {% with mensagens = get_flashed_messages() %}
+      {% if mensagens %}
+        {% for m in mensagens %}
+          <p class="aviso">{{ m }}</p>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block conteudo %}{% endblock %}
+  </main>
+
+  <footer class="rodape">
+    <p>Quilombo Doces &mdash; feitos com carinho.</p>
+    <p>
+      <a href="https://wa.me/{{ whatsapp }}" target="_blank">Fale com a gente no WhatsApp</a>
+      &middot;
+      <a href="{{ url_for('listar') }}">Área administrativa</a>
+    </p>
+  </footer>
+
+</body>
+</html>

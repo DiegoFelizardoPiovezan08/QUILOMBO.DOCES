@@ -1,0 +1,68 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}Meu carrinho{% endblock %}
+
+{% block conteudo %}
+
+  <h2 class="secao-titulo">Meu carrinho</h2>
+
+  {% if itens %}
+    <div class="carrinho">
+
+      <!-- lista dos doces escolhidos -->
+      <div class="carrinho-itens">
+        {% for item in itens %}
+        <div class="item">
+          <div class="item-img">{{ item.nome[0]|upper }}</div>
+
+          <div class="item-info">
+            <h3>{{ item.nome }}</h3>
+            <p class="item-preco">R$ {{ item.preco|brl }} cada</p>
+          </div>
+
+          <!-- botoes de menos e mais -->
+          <form class="qtd" method="post"
+                action="{{ url_for('loja_atualizar', id_doce=item.id) }}">
+            <button type="submit" name="acao" value="menos" aria-label="Diminuir">&minus;</button>
+            <span>{{ item.qtd }}</span>
+            <button type="submit" name="acao" value="mais" aria-label="Aumentar">+</button>
+          </form>
+
+          <p class="item-subtotal">R$ {{ item.subtotal|brl }}</p>
+
+          <form method="post" action="{{ url_for('loja_remover', id_doce=item.id) }}">
+            <button type="submit" class="btn-remover" aria-label="Remover">Remover</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- resumo e finalizacao -->
+      <aside class="resumo">
+        <h3>Resumo do pedido</h3>
+        <p class="resumo-linha">
+          <span>Total</span>
+          <strong>R$ {{ total|brl }}</strong>
+        </p>
+
+        <a class="btn btn-whatsapp btn-grande" href="{{ link_whatsapp }}" target="_blank">
+          Finalizar pelo WhatsApp
+        </a>
+
+        <p class="dica">Ao clicar, abrimos uma conversa com o seu pedido já escrito.</p>
+
+        <a class="btn btn-contorno" href="{{ url_for('loja') }}">Continuar comprando</a>
+
+        <form method="post" action="{{ url_for('loja_limpar') }}">
+          <button type="submit" class="btn-link">Esvaziar carrinho</button>
+        </form>
+      </aside>
+
+    </div>
+
+  {% else %}
+    <p class="vazio">Seu carrinho está vazio.</p>
+    <p class="centro"><a class="btn btn-principal" href="{{ url_for('loja') }}">Ver nossos doces</a></p>
+  {% endif %}
+
+{% endblock %}

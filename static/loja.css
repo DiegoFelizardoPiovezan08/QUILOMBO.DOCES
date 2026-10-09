@@ -1,0 +1,438 @@
+/* ==========================================================
+   loja.css — visao do consumidor, Quilombo Doces
+   Independente do estilo.css (que fica so no admin).
+   Para mudar as cores do site, edite o bloco :root.
+   ========================================================== */
+
+:root {
+  --creme:        #fff8f0;
+  --creme-escuro: #f6e7d7;
+  --chocolate:    #4a2c2a;
+  --chocolate-2:  #6b3f3a;
+  --rosa:         #d9467a;
+  --rosa-hover:   #bf3568;
+  --dourado:      #e0a44a;
+  --verde:        #25d366;
+  --verde-hover:  #1da851;
+  --branco:       #ffffff;
+  --borda:        #ead9c6;
+  --texto-suave:  #8a6d62;
+  --raio:         12px;
+  --sombra:       0 2px 12px rgba(74, 44, 42, 0.10);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  color: var(--chocolate);
+  background: var(--creme);
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3 {
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.2;
+  margin: 0;
+}
+
+a { color: var(--rosa); text-decoration: none; }
+a:hover { color: var(--rosa-hover); }
+
+.centro { text-align: center; }
+
+/* ---------- topo ---------- */
+
+.topo {
+  background: var(--chocolate);
+  border-bottom: 4px solid var(--dourado);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topo-conteudo {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.logo {
+  font-family: Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: var(--creme);
+  letter-spacing: 1px;
+}
+.logo span { color: var(--dourado); }
+.logo:hover { color: var(--creme); }
+
+.busca-topo {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  gap: 6px;
+}
+
+.busca-topo input {
+  flex: 1;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+.busca-topo input:focus { outline: 3px solid var(--dourado); }
+
+.busca-topo button {
+  background: var(--dourado);
+  color: var(--chocolate);
+  border: none;
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+.busca-topo button:hover { background: #cf9238; }
+
+.carrinho-link {
+  color: var(--creme);
+  font-weight: 700;
+  padding: 8px 16px;
+  border: 2px solid var(--creme);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.carrinho-link:hover { background: var(--rosa); border-color: var(--rosa); color: var(--branco); }
+
+.contador {
+  display: inline-block;
+  min-width: 22px;
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: var(--rosa);
+  color: var(--branco);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  text-align: center;
+}
+.carrinho-link:hover .contador { background: var(--branco); color: var(--rosa); }
+
+/* ---------- conteudo ---------- */
+
+.conteudo {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+.secao-titulo {
+  font-size: 1.6rem;
+  margin: 8px 0 20px;
+}
+
+.aviso {
+  background: #e8f6ec;
+  color: #1e6b3a;
+  border-left: 5px solid #1e6b3a;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 0 0 18px;
+}
+
+.vazio {
+  text-align: center;
+  color: var(--texto-suave);
+  font-style: italic;
+  padding: 30px 0 10px;
+}
+
+/* ---------- faixa de boas-vindas ---------- */
+
+.hero {
+  background: linear-gradient(135deg, var(--rosa), #f08aa8);
+  color: var(--branco);
+  text-align: center;
+  padding: 44px 20px;
+  border-radius: var(--raio);
+  margin-bottom: 28px;
+  box-shadow: var(--sombra);
+}
+.hero h1 { font-size: 2rem; margin-bottom: 8px; }
+.hero p  { margin: 0; font-size: 1.05rem; opacity: 0.95; }
+
+/* ---------- botoes ---------- */
+
+.btn {
+  display: inline-block;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn:active { transform: scale(0.97); }
+
+.btn-principal { background: var(--rosa); color: var(--branco); }
+.btn-principal:hover { background: var(--rosa-hover); color: var(--branco); }
+
+.btn-whatsapp { background: var(--verde); color: var(--branco); }
+.btn-whatsapp:hover { background: var(--verde-hover); color: var(--branco); }
+
+.btn-contorno { background: transparent; color: var(--chocolate); border-color: var(--chocolate); }
+.btn-contorno:hover { background: var(--chocolate); color: var(--creme); }
+
+.btn-grande { padding: 14px 28px; font-size: 1.05rem; }
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--texto-suave);
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 6px;
+}
+.btn-link:hover { color: #c0392b; }
+
+/* ---------- vitrine ---------- */
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 22px;
+}
+
+.card-doce {
+  background: var(--branco);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.card-doce:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(74, 44, 42, 0.18);
+}
+
+/* "foto" provisoria: inicial do doce sobre fundo colorido.
+   Quando tiver fotos, troque por <img> dentro do mesmo link. */
+.card-img,
+.produto-img,
+.item-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--creme-escuro), #f3c9d6);
+  color: var(--rosa);
+  font-family: Georgia, serif;
+  font-weight: bold;
+}
+.card-img { height: 160px; font-size: 4rem; }
+
+.card-corpo {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+.card-corpo h3 { font-size: 1.15rem; }
+.card-corpo h3 a { color: var(--chocolate); }
+.card-corpo h3 a:hover { color: var(--rosa); }
+.card-corpo form { margin-top: auto; }
+.card-corpo .btn { width: 100%; }
+
+.preco {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--rosa);
+}
+.preco-grande { font-size: 1.9rem; }
+
+/* ---------- pagina do produto ---------- */
+
+.voltar { margin: 0 0 16px; }
+
+.produto {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  background: var(--branco);
+  padding: 28px;
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+}
+
+.produto-img {
+  min-height: 300px;
+  font-size: 8rem;
+  border-radius: var(--raio);
+}
+
+.produto-info { display: flex; flex-direction: column; gap: 14px; justify-content: center; }
+.produto-info h1 { font-size: 2.1rem; }
+
+.produto-info label { font-weight: 700; display: block; margin-bottom: 6px; }
+
+.produto-info input[type="number"] {
+  width: 90px;
+  padding: 10px;
+  font-size: 1.05rem;
+  font-family: inherit;
+  border: 2px solid var(--borda);
+  border-radius: 10px;
+  margin-right: 12px;
+  background: var(--creme);
+  color: var(--chocolate);
+}
+.produto-info input[type="number"]:focus { outline: none; border-color: var(--rosa); }
+
+.dica { margin: 0; font-size: 0.88rem; color: var(--texto-suave); }
+
+/* ---------- carrinho ---------- */
+
+.carrinho {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.carrinho-itens {
+  background: var(--branco);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: 8px 20px;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 64px 1fr auto auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--borda);
+}
+.item:last-child { border-bottom: none; }
+
+.item-img { width: 64px; height: 64px; border-radius: 10px; font-size: 1.8rem; }
+.item-info h3 { font-size: 1.05rem; }
+.item-preco { margin: 2px 0 0; font-size: 0.88rem; color: var(--texto-suave); }
+.item-subtotal { margin: 0; font-weight: 700; min-width: 90px; text-align: right; }
+
+.qtd {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 2px solid var(--borda);
+  border-radius: 999px;
+  padding: 2px;
+}
+.qtd button {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: var(--creme-escuro);
+  color: var(--chocolate);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.qtd button:hover { background: var(--rosa); color: var(--branco); }
+.qtd span { min-width: 28px; text-align: center; font-weight: 700; }
+
+.btn-remover {
+  background: none;
+  border: none;
+  color: var(--texto-suave);
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+.btn-remover:hover { color: #c0392b; }
+
+.resumo {
+  background: var(--branco);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: sticky;
+  top: 90px;
+}
+.resumo h3 { font-size: 1.2rem; }
+.resumo form { text-align: center; }
+
+.resumo-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0;
+  padding: 12px 0;
+  border-top: 2px dashed var(--borda);
+  border-bottom: 2px dashed var(--borda);
+}
+.resumo-linha strong { font-size: 1.6rem; color: var(--rosa); }
+
+/* ---------- rodape ---------- */
+
+.rodape {
+  background: var(--chocolate);
+  color: var(--creme);
+  text-align: center;
+  padding: 22px 20px;
+  font-size: 0.9rem;
+}
+.rodape p { margin: 4px 0; }
+.rodape a { color: var(--dourado); }
+.rodape a:hover { color: var(--creme); }
+
+/* ---------- celular ---------- */
+
+@media (max-width: 760px) {
+  .hero h1 { font-size: 1.5rem; }
+
+  .produto { grid-template-columns: 1fr; padding: 18px; }
+  .produto-img { min-height: 200px; font-size: 5rem; }
+
+  .carrinho { grid-template-columns: 1fr; }
+  .resumo { position: static; }
+
+  /* cada item vira um bloco de duas linhas */
+  .item {
+    grid-template-columns: 56px 1fr auto;
+    grid-template-areas:
+      "img info  sub"
+      "img qtd   rem";
+    gap: 8px 12px;
+  }
+  .item-img      { grid-area: img; width: 56px; height: 56px; }
+  .item-info     { grid-area: info; }
+  .item-subtotal { grid-area: sub; }
+  .item .qtd     { grid-area: qtd; justify-self: start; }
+  .item > form:last-child { grid-area: rem; justify-self: end; }
+}

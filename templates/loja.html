@@ -1,0 +1,49 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}{% if termo %}Busca: {{ termo }}{% else %}Nossos doces{% endif %}{% endblock %}
+
+{% block conteudo %}
+
+  <!-- faixa de boas-vindas (some quando a pessoa esta buscando) -->
+  {% if not termo %}
+  <section class="hero">
+    <h1>Doces artesanais, feitos com carinho</h1>
+    <p>Escolha seus doces, monte o carrinho e finalize o pedido pelo WhatsApp.</p>
+  </section>
+  {% endif %}
+
+  <h2 class="secao-titulo">
+    {% if termo %}Resultados para "{{ termo }}"{% else %}Nossos doces{% endif %}
+  </h2>
+
+  {% if doces %}
+    <!-- grade de produtos -->
+    <div class="grade">
+      {% for p in doces %}
+      <article class="card-doce">
+        <!-- sem foto ainda: mostra a inicial do doce -->
+        <a class="card-img" href="{{ url_for('loja_produto', id_doce=p['id']) }}">
+          {{ p['nome'][0]|upper }}
+        </a>
+
+        <div class="card-corpo">
+          <h3><a href="{{ url_for('loja_produto', id_doce=p['id']) }}">{{ p['nome'] }}</a></h3>
+          <p class="preco">R$ {{ p['preco']|brl }}</p>
+
+          <form method="post" action="{{ url_for('loja_adicionar', id_doce=p['id']) }}">
+            <button type="submit" class="btn btn-principal">Adicionar ao carrinho</button>
+          </form>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+  {% elif termo %}
+    <p class="vazio">Nenhum doce encontrado com "{{ termo }}".</p>
+    <p class="centro"><a class="btn btn-contorno" href="{{ url_for('loja') }}">Ver todos os doces</a></p>
+
+  {% else %}
+    <p class="vazio">Ainda não temos doces disponíveis. Volte em breve!</p>
+  {% endif %}
+
+{% endblock %}
