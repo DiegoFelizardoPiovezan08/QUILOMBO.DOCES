@@ -1,24 +1,24 @@
 /* ==========================================================
-   loja.css — visao do consumidor, Quilombo Doces
-   Independente do estilo.css (que fica so no admin).
-   Para mudar as cores do site, edite o bloco :root.
+   loja.css — Quilombo Doces (paleta do Manual de Identidade)
    ========================================================== */
 
 :root {
-  --creme:        #fff8f0;
-  --creme-escuro: #f6e7d7;
-  --chocolate:    #4a2c2a;
-  --chocolate-2:  #6b3f3a;
-  --rosa:         #d9467a;
-  --rosa-hover:   #bf3568;
-  --dourado:      #e0a44a;
+  --areia:        #f2e4c8;
+  --areia-escura: #f2e4c8;
+  --cacau:        #2b1a14;
+  --raiz:         #4a2a1e;
+  --cacau-2:      #2b1a14;
+  --terracota:    #c35a1e;
+  --terracota-hover: #4a2a1e;
+  --ouro:         #ef9319;
+  --ouro-hover:   #d6820f;
   --verde:        #25d366;
   --verde-hover:  #1da851;
   --branco:       #ffffff;
-  --borda:        #ead9c6;
-  --texto-suave:  #8a6d62;
+  --borda:        #dcc9a0;
+  --texto-suave:  #4a2a1e;
   --raio:         12px;
-  --sombra:       0 2px 12px rgba(74, 44, 42, 0.10);
+  --sombra:       0 2px 12px rgba(74, 42, 30, 0.10);
 }
 
 * { box-sizing: border-box; }
@@ -26,8 +26,8 @@
 body {
   margin: 0;
   font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-  color: var(--chocolate);
-  background: var(--creme);
+  color: var(--cacau);
+  background: var(--areia);
   line-height: 1.5;
   min-height: 100vh;
   display: flex;
@@ -40,16 +40,16 @@ h1, h2, h3 {
   margin: 0;
 }
 
-a { color: var(--rosa); text-decoration: none; }
-a:hover { color: var(--rosa-hover); }
+a { color: var(--terracota); text-decoration: none; }
+a:hover { color: var(--terracota-hover); }
 
 .centro { text-align: center; }
 
 /* ---------- topo ---------- */
 
 .topo {
-  background: var(--chocolate);
-  border-bottom: 4px solid var(--dourado);
+  background: var(--raiz);
+  border-bottom: 4px solid var(--ouro);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -69,63 +69,55 @@ a:hover { color: var(--rosa-hover); }
   font-family: Georgia, serif;
   font-size: 1.6rem;
   font-weight: bold;
-  color: var(--creme);
+  color: var(--areia);
   letter-spacing: 1px;
 }
-.logo span { color: var(--dourado); }
-.logo:hover { color: var(--creme); }
+.logo span { color: var(--ouro); }
+.logo:hover { color: var(--areia); }
 
-.busca-topo {
-  flex: 1;
-  min-width: 200px;
+/* ---------- menu do topo (Produtos, Eventos, Carrinho) ----------
+   Os tres botoes tem o mesmo design: pilula com borda areia,
+   e fundo terracota ao passar o mouse. */
+
+.menu {
+  margin-left: auto;
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.busca-topo input {
-  flex: 1;
-  padding: 9px 14px;
-  border: none;
-  border-radius: 999px;
-  font-size: 0.95rem;
-  font-family: inherit;
-}
-.busca-topo input:focus { outline: 3px solid var(--dourado); }
-
-.busca-topo button {
-  background: var(--dourado);
-  color: var(--chocolate);
-  border: none;
-  border-radius: 999px;
-  padding: 9px 18px;
+.menu a,
+.menu .carrinho-link {
+  display: inline-block;
+  color: var(--areia);
   font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-}
-.busca-topo button:hover { background: #cf9238; }
-
-.carrinho-link {
-  color: var(--creme);
-  font-weight: 700;
-  padding: 8px 16px;
-  border: 2px solid var(--creme);
+  padding: 8px 18px;
+  border: 2px solid var(--areia);
   border-radius: 999px;
   white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
-.carrinho-link:hover { background: var(--rosa); border-color: var(--rosa); color: var(--branco); }
+
+.menu a:hover,
+.menu .carrinho-link:hover {
+  background: var(--terracota);
+  border-color: var(--terracota);
+  color: var(--branco);
+}
 
 .contador {
   display: inline-block;
   min-width: 22px;
   margin-left: 6px;
   padding: 1px 6px;
-  background: var(--rosa);
+  background: var(--terracota);
   color: var(--branco);
   border-radius: 999px;
   font-size: 0.8rem;
   text-align: center;
 }
-.carrinho-link:hover .contador { background: var(--branco); color: var(--rosa); }
+.menu .carrinho-link:hover .contador { background: var(--branco); color: var(--terracota); }
 
 /* ---------- conteudo ---------- */
 
@@ -158,19 +150,81 @@ a:hover { color: var(--rosa-hover); }
   padding: 30px 0 10px;
 }
 
-/* ---------- faixa de boas-vindas ---------- */
+/* ---------- carrossel (so imagens) ---------- */
 
-.hero {
-  background: linear-gradient(135deg, var(--rosa), #f08aa8);
-  color: var(--branco);
-  text-align: center;
-  padding: 44px 20px;
+.carrossel {
+  position: relative;
   border-radius: var(--raio);
-  margin-bottom: 28px;
+  overflow: hidden;
   box-shadow: var(--sombra);
+  margin-bottom: 32px;
+  background: var(--raiz);
 }
-.hero h1 { font-size: 2rem; margin-bottom: 8px; }
-.hero p  { margin: 0; font-size: 1.05rem; opacity: 0.95; }
+
+.carrossel-slides { position: relative; height: 380px; }
+
+.slide {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.slide.ativo { opacity: 1; z-index: 1; }
+
+/* fundo de cada slide enquanto nao ha foto (cores do manual) */
+.slide-1 { background: linear-gradient(135deg, var(--terracota), var(--raiz)); }
+.slide-2 { background: linear-gradient(135deg, var(--ouro), var(--terracota)); }
+.slide-3 { background: linear-gradient(135deg, var(--raiz), var(--cacau)); }
+.slide-4 { background: linear-gradient(135deg, var(--terracota), var(--ouro)); }
+
+.slide img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carrossel-seta {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(242, 228, 200, 0.85);
+  color: var(--cacau);
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.carrossel-seta:hover { background: var(--ouro); }
+.carrossel-seta.anterior { left: 14px; }
+.carrossel-seta.proxima  { right: 14px; }
+
+.carrossel-pontos {
+  position: absolute;
+  bottom: 14px;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.ponto {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 2px solid var(--areia);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.ponto.ativo { background: var(--ouro); border-color: var(--ouro); }
 
 /* ---------- botoes ---------- */
 
@@ -188,14 +242,14 @@ a:hover { color: var(--rosa-hover); }
 }
 .btn:active { transform: scale(0.97); }
 
-.btn-principal { background: var(--rosa); color: var(--branco); }
-.btn-principal:hover { background: var(--rosa-hover); color: var(--branco); }
+.btn-principal { background: var(--terracota); color: var(--branco); }
+.btn-principal:hover { background: var(--terracota-hover); color: var(--branco); }
 
 .btn-whatsapp { background: var(--verde); color: var(--branco); }
 .btn-whatsapp:hover { background: var(--verde-hover); color: var(--branco); }
 
-.btn-contorno { background: transparent; color: var(--chocolate); border-color: var(--chocolate); }
-.btn-contorno:hover { background: var(--chocolate); color: var(--creme); }
+.btn-contorno { background: transparent; color: var(--cacau); border-color: var(--cacau); }
+.btn-contorno:hover { background: var(--cacau); color: var(--areia); }
 
 .btn-grande { padding: 14px 28px; font-size: 1.05rem; }
 
@@ -230,19 +284,17 @@ a:hover { color: var(--rosa-hover); }
 }
 .card-doce:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(74, 44, 42, 0.18);
+  box-shadow: 0 8px 20px rgba(74, 42, 30, 0.18);
 }
 
-/* "foto" provisoria: inicial do doce sobre fundo colorido.
-   Quando tiver fotos, troque por <img> dentro do mesmo link. */
 .card-img,
 .produto-img,
 .item-img {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--creme-escuro), #f3c9d6);
-  color: var(--rosa);
+  background: linear-gradient(135deg, var(--areia-escura), var(--ouro));
+  color: var(--raiz);
   font-family: Georgia, serif;
   font-weight: bold;
 }
@@ -255,184 +307,4 @@ a:hover { color: var(--rosa-hover); }
   gap: 8px;
   flex: 1;
 }
-.card-corpo h3 { font-size: 1.15rem; }
-.card-corpo h3 a { color: var(--chocolate); }
-.card-corpo h3 a:hover { color: var(--rosa); }
-.card-corpo form { margin-top: auto; }
-.card-corpo .btn { width: 100%; }
-
-.preco {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--rosa);
-}
-.preco-grande { font-size: 1.9rem; }
-
-/* ---------- pagina do produto ---------- */
-
-.voltar { margin: 0 0 16px; }
-
-.produto {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  background: var(--branco);
-  padding: 28px;
-  border-radius: var(--raio);
-  box-shadow: var(--sombra);
-}
-
-.produto-img {
-  min-height: 300px;
-  font-size: 8rem;
-  border-radius: var(--raio);
-}
-
-.produto-info { display: flex; flex-direction: column; gap: 14px; justify-content: center; }
-.produto-info h1 { font-size: 2.1rem; }
-
-.produto-info label { font-weight: 700; display: block; margin-bottom: 6px; }
-
-.produto-info input[type="number"] {
-  width: 90px;
-  padding: 10px;
-  font-size: 1.05rem;
-  font-family: inherit;
-  border: 2px solid var(--borda);
-  border-radius: 10px;
-  margin-right: 12px;
-  background: var(--creme);
-  color: var(--chocolate);
-}
-.produto-info input[type="number"]:focus { outline: none; border-color: var(--rosa); }
-
-.dica { margin: 0; font-size: 0.88rem; color: var(--texto-suave); }
-
-/* ---------- carrinho ---------- */
-
-.carrinho {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 24px;
-  align-items: start;
-}
-
-.carrinho-itens {
-  background: var(--branco);
-  border-radius: var(--raio);
-  box-shadow: var(--sombra);
-  padding: 8px 20px;
-}
-
-.item {
-  display: grid;
-  grid-template-columns: 64px 1fr auto auto auto;
-  gap: 16px;
-  align-items: center;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--borda);
-}
-.item:last-child { border-bottom: none; }
-
-.item-img { width: 64px; height: 64px; border-radius: 10px; font-size: 1.8rem; }
-.item-info h3 { font-size: 1.05rem; }
-.item-preco { margin: 2px 0 0; font-size: 0.88rem; color: var(--texto-suave); }
-.item-subtotal { margin: 0; font-weight: 700; min-width: 90px; text-align: right; }
-
-.qtd {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border: 2px solid var(--borda);
-  border-radius: 999px;
-  padding: 2px;
-}
-.qtd button {
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 50%;
-  background: var(--creme-escuro);
-  color: var(--chocolate);
-  font-size: 1.1rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-.qtd button:hover { background: var(--rosa); color: var(--branco); }
-.qtd span { min-width: 28px; text-align: center; font-weight: 700; }
-
-.btn-remover {
-  background: none;
-  border: none;
-  color: var(--texto-suave);
-  text-decoration: underline;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.85rem;
-}
-.btn-remover:hover { color: #c0392b; }
-
-.resumo {
-  background: var(--branco);
-  border-radius: var(--raio);
-  box-shadow: var(--sombra);
-  padding: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  position: sticky;
-  top: 90px;
-}
-.resumo h3 { font-size: 1.2rem; }
-.resumo form { text-align: center; }
-
-.resumo-linha {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin: 0;
-  padding: 12px 0;
-  border-top: 2px dashed var(--borda);
-  border-bottom: 2px dashed var(--borda);
-}
-.resumo-linha strong { font-size: 1.6rem; color: var(--rosa); }
-
-/* ---------- rodape ---------- */
-
-.rodape {
-  background: var(--chocolate);
-  color: var(--creme);
-  text-align: center;
-  padding: 22px 20px;
-  font-size: 0.9rem;
-}
-.rodape p { margin: 4px 0; }
-.rodape a { color: var(--dourado); }
-.rodape a:hover { color: var(--creme); }
-
-/* ---------- celular ---------- */
-
-@media (max-width: 760px) {
-  .hero h1 { font-size: 1.5rem; }
-
-  .produto { grid-template-columns: 1fr; padding: 18px; }
-  .produto-img { min-height: 200px; font-size: 5rem; }
-
-  .carrinho { grid-template-columns: 1fr; }
-  .resumo { position: static; }
-
-  /* cada item vira um bloco de duas linhas */
-  .item {
-    grid-template-columns: 56px 1fr auto;
-    grid-template-areas:
-      "img info  sub"
-      "img qtd   rem";
-    gap: 8px 12px;
-  }
-  .item-img      { grid-area: img; width: 56px; height: 56px; }
-  .item-info     { grid-area: info; }
-  .item-subtotal { grid-area: sub; }
-  .item .qtd     { grid-area: qtd; justify-self: start; }
-  .item > form:last-child { grid-area: rem; justify-self: end; }
-}
+.card-corpo

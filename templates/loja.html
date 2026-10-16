@@ -1,27 +1,94 @@
 {% extends "base_loja.html" %}
 
-{% block titulo %}{% if termo %}Busca: {{ termo }}{% else %}Nossos doces{% endif %}{% endblock %}
+{% block titulo %}Início{% endblock %}
 
 {% block conteudo %}
 
-  <!-- faixa de boas-vindas (some quando a pessoa esta buscando) -->
-  {% if not termo %}
-  <section class="hero">
-    <h1>Receitas ancestrais que nutrem alma e memória</h1>
-    <p>Escolha seus doces, monte o carrinho e participe dos eventos!</p>
-  </section>
-  {% endif %}
+  <!-- CARROSSEL: coloque 4 fotos em static/img/ com os nomes
+       carrossel-1.jpg, carrossel-2.jpg, carrossel-3.jpg, carrossel-4.jpg -->
+  <section class="carrossel" aria-roledescription="carrossel" aria-label="Fotos da Quilombo Doces">
 
-  <h2 class="secao-titulo">
-    {% if termo %}Resultados para "{{ termo }}"{% else %}Nossos doces{% endif %}
-  </h2>
+    <div class="carrossel-slides">
+      <figure class="slide slide-1 ativo">
+        <img src="{{ url_for('static', filename='img/carrossel-1.jpg') }}"
+             alt="Quilombo Doces" onerror="this.remove()">
+      </figure>
+
+      <figure class="slide slide-2">
+        <img src="{{ url_for('static', filename='img/carrossel-2.jpg') }}"
+             alt="Doces artesanais" onerror="this.remove()">
+      </figure>
+
+      <figure class="slide slide-3">
+        <img src="{{ url_for('static', filename='img/carrossel-3.jpg') }}"
+             alt="Geleias e licores" onerror="this.remove()">
+      </figure>
+
+      <figure class="slide slide-4">
+        <img src="{{ url_for('static', filename='img/carrossel-4.jpg') }}"
+             alt="Eventos Quilombo Doces" onerror="this.remove()">
+      </figure>
+    </div>
+
+    <button type="button" class="carrossel-seta anterior" aria-label="Foto anterior">&lsaquo;</button>
+    <button type="button" class="carrossel-seta proxima" aria-label="Próxima foto">&rsaquo;</button>
+
+    <div class="carrossel-pontos">
+      <button type="button" class="ponto ativo" aria-label="Foto 1"></button>
+      <button type="button" class="ponto" aria-label="Foto 2"></button>
+      <button type="button" class="ponto" aria-label="Foto 3"></button>
+      <button type="button" class="ponto" aria-label="Foto 4"></button>
+    </div>
+
+  </section>
+
+  <script>
+    (function () {
+      var raiz   = document.querySelector('.carrossel');
+      var slides = raiz.querySelectorAll('.slide');
+      var pontos = raiz.querySelectorAll('.ponto');
+      var atual  = 0;
+      var timer;
+
+      function ir(n) {
+        slides[atual].classList.remove('ativo');
+        pontos[atual].classList.remove('ativo');
+        atual = (n + slides.length) % slides.length;
+        slides[atual].classList.add('ativo');
+        pontos[atual].classList.add('ativo');
+      }
+      function parar()   { clearInterval(timer); }
+      function iniciar() { parar(); timer = setInterval(function () { ir(atual + 1); }, 5000); }
+
+      raiz.querySelector('.anterior').onclick = function () { ir(atual - 1); iniciar(); };
+      raiz.querySelector('.proxima').onclick  = function () { ir(atual + 1); iniciar(); };
+      pontos.forEach(function (p, i) { p.onclick = function () { ir(i); iniciar(); }; });
+
+      raiz.addEventListener('mouseenter', parar);
+      raiz.addEventListener('mouseleave', iniciar);
+
+      var x0 = null;
+      raiz.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; parar(); }, {passive: true});
+      raiz.addEventListener('touchend', function (e) {
+        if (x0 !== null) {
+          var dx = e.changedTouches[0].clientX - x0;
+          if (Math.abs(dx) > 40) { ir(dx < 0 ? atual + 1 : atual - 1); }
+        }
+        x0 = null; iniciar();
+      });
+
+      iniciar();
+    })();
+  </script>
+
+
+  <!-- DESTAQUES (para mostrar só os 4 primeiros, troque "doces" por "doces[:4]") -->
+  <h2 class="secao-titulo">Destaques</h2>
 
   {% if doces %}
-    <!-- grade de produtos -->
     <div class="grade">
       {% for p in doces %}
       <article class="card-doce">
-        <!-- sem foto ainda: mostra a inicial do doce -->
         <a class="card-img" href="{{ url_for('loja_produto', id_doce=p['id']) }}">
           {{ p['nome'][0]|upper }}
         </a>
@@ -37,10 +104,6 @@
       </article>
       {% endfor %}
     </div>
-
-  {% elif termo %}
-    <p class="vazio">Nenhum doce encontrado com "{{ termo }}".</p>
-    <p class="centro"><a class="btn btn-contorno" href="{{ url_for('loja') }}">Ver todos os doces</a></p>
 
   {% else %}
     <p class="vazio">Ainda não temos doces disponíveis. Volte em breve!</p>

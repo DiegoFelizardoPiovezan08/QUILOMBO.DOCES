@@ -1,19 +1,21 @@
 /* ==========================================================
    estilo.css — Quilombo Doces
-   Visual de doceria: creme, chocolate e rosa-doce.
+   Paleta do Manual de Identidade Visual.
    Para trocar as cores do site inteiro, mude so as
    variaveis do bloco :root abaixo.
    ========================================================== */
 
 :root {
-  --creme:        #fff8f0;   /* fundo da pagina */
-  --creme-escuro: #f6e7d7;   /* faixas e cabecalho da tabela */
-  --chocolate:    #4a2c2a;   /* texto e cabecalho */
-  --chocolate-2:  #6b3f3a;   /* hover do chocolate */
-  --rosa:         #d9467a;   /* cor de destaque (botoes principais) */
-  --rosa-escuro:  #b8346263; /* sombra suave do rosa */
-  --rosa-hover:   #bf3568;
-  --dourado:      #e0a44a;   /* detalhes */
+  --areia:        #f2e4c8;   /* Areia da Bahia: fundo da pagina */
+  --areia-escura: #f2e4c8;   /* faixas e cabecalho da tabela */
+  --cacau:        #2b1a14;   /* 100% Cacau: texto */
+  --raiz:         #4a2a1e;   /* Raiz Ancestral: cabecalho e rodape */
+  --cacau-2:      #2b1a14;   /* hover do botao padrao */
+  --terracota:    #c35a1e;   /* Ceramica Terracota: destaque (botoes principais) */
+  --terracota-sombra: #c35a1e63; /* sombra suave da terracota */
+  --terracota-hover:  #4a2a1e;
+  --ouro:         #ef9319;   /* Ouro de Dende: detalhes */
+  --ouro-hover:   #d6820f;
   --verde:        #25d366;   /* WhatsApp */
   --verde-hover:  #1da851;
   --perigo:       #c0392b;
@@ -21,9 +23,9 @@
   --sucesso-txt:  #1e6b3a;
   --erro-bg:      #fdecea;
   --branco:       #ffffff;
-  --borda:        #ead9c6;
+  --borda:        #dcc9a0;
   --raio:         10px;
-  --sombra:       0 2px 10px rgba(74, 44, 42, 0.10);
+  --sombra:       0 2px 10px rgba(74, 42, 30, 0.10);
 }
 
 /* ---------- base ---------- */
@@ -35,8 +37,8 @@ body {
   font-family: "Segoe UI", Tahoma, Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
-  color: var(--chocolate);
-  background: var(--creme);
+  color: var(--cacau);
+  background: var(--areia);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -47,16 +49,16 @@ h1, h2, h3 {
   line-height: 1.2;
 }
 
-a { color: var(--rosa); }
-a:hover { color: var(--rosa-hover); }
+a { color: var(--terracota); }
+a:hover { color: var(--terracota-hover); }
 
 /* ---------- cabecalho e menu ---------- */
 
 header {
-  background: var(--chocolate);
-  color: var(--creme);
+  background: var(--raiz);
+  color: var(--areia);
   padding: 18px 24px 0;
-  border-bottom: 4px solid var(--dourado);
+  border-bottom: 4px solid var(--ouro);
 }
 
 header h1 {
@@ -74,7 +76,7 @@ nav {
 }
 
 nav a {
-  color: var(--creme);
+  color: var(--areia);
   text-decoration: none;
   padding: 10px 20px;
   border-radius: var(--raio) var(--raio) 0 0;
@@ -84,7 +86,7 @@ nav a {
 }
 
 nav a:hover {
-  background: var(--rosa);
+  background: var(--terracota);
   color: var(--branco);
 }
 
@@ -112,8 +114,8 @@ main h2 {
 footer {
   text-align: center;
   padding: 18px;
-  background: var(--chocolate);
-  color: var(--creme);
+  background: var(--raiz);
+  color: var(--areia);
   font-size: 0.9rem;
 }
 
@@ -127,7 +129,7 @@ table {
 
 th {
   text-align: left;
-  background: var(--creme-escuro);
+  background: var(--areia-escura);
   padding: 12px;
   font-size: 0.9rem;
   text-transform: uppercase;
@@ -142,7 +144,7 @@ td {
   max-width: 400px;
 }
 
-tr:hover td { background: #fffaf4; }
+tr:hover td { background: rgba(242, 228, 200, 0.45); }
 
 /* ---------- botoes ---------- */
 
@@ -167,27 +169,27 @@ button:active,
 
 /* botao padrao (Buscar, Salvar, Remover, Esvaziar...) */
 button {
-  background: var(--chocolate);
-  color: var(--creme);
+  background: var(--raiz);
+  color: var(--areia);
 }
-button:hover { background: var(--chocolate-2); }
+button:hover { background: var(--cacau-2); }
 
 /* "+ Cadastrar novo doce" e "Editar" */
 .botao {
-  background: var(--rosa);
+  background: var(--terracota);
   color: var(--branco);
 }
 .botao:hover {
-  background: var(--rosa-hover);
+  background: var(--terracota-hover);
   color: var(--branco);
 }
 
 /* Adicionar ao carrinho */
 .btn-carrinho {
-  background: var(--dourado);
-  color: var(--chocolate);
+  background: var(--ouro);
+  color: var(--cacau);
 }
-.btn-carrinho:hover { background: #cf9238; }
+.btn-carrinho:hover { background: var(--ouro-hover); }
 
 /* Finalizar pedido pelo WhatsApp */
 .btn-whatsapp {
@@ -234,8 +236,8 @@ textarea {
   padding: 10px 12px;
   font-family: inherit;
   font-size: 1rem;
-  color: var(--chocolate);
-  background: var(--creme);
+  color: var(--cacau);
+  background: var(--areia);
   border: 2px solid var(--borda);
   border-radius: var(--raio);
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -258,8 +260,8 @@ input[type="number"] {
   padding: 10px 12px;
   font-family: inherit;
   font-size: 1rem;
-  color: var(--chocolate);
-  background: var(--creme);
+  color: var(--cacau);
+  background: var(--areia);
   border: 2px solid var(--borda);
   border-radius: var(--raio);
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -268,8 +270,8 @@ input[type="number"] {
 input[type="text"]:focus,
 input[type="number"]:focus {
   outline: none;
-  border-color: var(--rosa);
-  box-shadow: 0 0 0 3px rgba(217, 70, 122, 0.18);
+  border-color: var(--terracota);
+  box-shadow: 0 0 0 3px rgba(195, 90, 30, 0.18);
 }
 
 /* formulario de busca: campo e botao lado a lado */
@@ -308,7 +310,7 @@ form[method="get"] input[type="text"] { flex: 1; min-width: 200px; }
 
 .vazio {
   text-align: center;
-  color: #8a6d62;
+  color: var(--raiz);
   font-style: italic;
   padding: 24px 0;
 }
@@ -318,7 +320,7 @@ form[method="get"] input[type="text"] { flex: 1; min-width: 200px; }
 .detalhe {
   list-style: none;
   padding: 16px 20px;
-  background: var(--creme);
+  background: var(--areia);
   border: 1px solid var(--borda);
   border-radius: var(--raio);
 }
@@ -329,7 +331,7 @@ form[method="get"] input[type="text"] { flex: 1; min-width: 200px; }
 main h3 {
   text-align: right;
   font-size: 1.4rem;
-  color: var(--rosa);
+  color: var(--terracota);
 }
 
 /* ---------- celular ---------- */
