@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h2>{{ titulo }}</h2>
+<form method="post" action="{{ acao }}">
+    <label>Nome</label>
+    <input type="text" name="nome" value="{{ dados.get('nome', '') }}">
+    {% if erros.get('nome') %}<p class="erro">{{ erros['nome'] }}</p>{% endif %}
+
+    <label>Descrição</label>
+    <textarea name="descricao" rows="7" cols="120">{{ dados.get('descricao', '') }}</textarea><br></br>
+    {% if erros.get('descricao') %}<p class="erro">{{ erros['descricao'] }}</p>{% endif %}
+
+    <button type="submit">Salvar</button>
+    <a href="{{ url_for('eventos') }}">Cancelar</a>
+</form>
+{% endblock %}

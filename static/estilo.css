@@ -138,6 +138,8 @@ td {
   padding: 12px;
   border-bottom: 1px solid var(--borda);
   vertical-align: middle;
+  word-break: break-word;
+  max-width: 400px;
 }
 
 tr:hover td { background: #fffaf4; }
@@ -224,6 +226,19 @@ button:hover { background: var(--chocolate-2); }
 td form {
   display: inline-block;
   margin: 4px 2px;
+}
+
+textarea {
+  width: 100%;
+  max-width: 420px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--chocolate);
+  background: var(--creme);
+  border: 2px solid var(--borda);
+  border-radius: var(--raio);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 /* ---------- formularios ---------- */

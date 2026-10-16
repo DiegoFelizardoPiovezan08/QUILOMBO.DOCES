@@ -405,7 +405,112 @@ def loja_limpar():
     session.pop("carrinho", None)
     return redirect(url_for("loja_carrinho"))
 
+# ----------------------------------------------------------- EVENTOS
+
+@app.route("/eventos")
+def eventos():  
+    """Pagina inicial: todos os eventos cadastrados."""
+    conn = conectar_banco()
+    eventos = conn.execute(
+        'SELECT * FROM eventos ORDER BY nome').fetchall()
+    conn.close()
+
+    #a mensagem de sucesso chega pela URL, apos o redirect
+    return render_template("eventos.html", eventos=eventos,
+                           msg=request.args.get("msg", "")) 
+
+@app.route("/novo_evento", methods=["GET", "POST"])
+def novo_evento():
+    """GET exibe o formulario; POST grava o evento."""
+    if request.method == "GET":
+        return render_template("form_evento.html", titulo="Cadastrar evento",
+                               dados={}, erros={}, acao=url_for("novo_evento"))
+
+    dados = {
+        "nome": request.form.get("nome", "").strip(),
+        "descricao": request.form.get("descricao", "").strip(),
+    }
+
+    conn = conectar_banco()
+    erros = {}
+    if len(dados["nome"]) < 2:
+        erros["nome"] = "O nome deve ter pelo menos 2 caracteres."
+
+    if erros:
+        conn.close()
+        return render_template("form_evento.html", titulo="Cadastrar evento",
+                               dados=dados, erros=erros,
+                               acao=url_for("novo_evento")), 400
+
+    conn.execute(
+        'INSERT INTO eventos (nome, descricao) VALUES (?, ?)',
+        (dados["nome"].title(), dados["descricao"]))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for("eventos", msg="Evento cadastrado com sucesso!"))
+
+@app.route("/evento/<int:id_evento>/editar", methods=["GET", "POST"])
+def editar_evento(id_evento):       
+    """GET exibe o formulario preenchido; POST grava a alteracao."""
+    conn = conectar_banco()
+    evento = conn.execute('SELECT * FROM eventos WHERE id = ?',
+                        (id_evento,)).fetchone()
+
+    if evento is None:
+        conn.close()
+        return render_template("erro.html",
+                               mensagem=f"Nao existe evento com id {id_evento}."), 404
+
+    if request.method == "GET":
+        conn.close()
+        dados = dict(evento)
+        return render_template("form_evento.html", titulo=f"Editar {evento['nome']}",
+                               dados=dados, erros={},
+                               acao=url_for("editar_evento", id_evento=id_evento))
+
+    dados = {
+        "nome": request.form.get("nome", "").strip(),
+        "descricao": request.form.get("descricao", "").strip(),
+    }
+    erros = {}
+    if len(dados["nome"]) < 2:
+        erros["nome"] = "O nome deve ter pelo menos 2 caracteres."
+
+    if erros:
+        conn.close()
+        return render_template("form_evento.html", titulo=f"Editar {evento['nome']}",
+                               dados=dados, erros=erros,
+                               acao=url_for("editar_evento", id_evento=id_evento)), 400
+
+    conn.execute(
+        'UPDATE eventos SET nome = ?, descricao = ? WHERE id = ?',
+        (dados["nome"].title(), dados["descricao"], id_evento))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for("eventos", msg="Dados do evento atualizados com sucesso!"))
+
+@app.route("/evento/<int:id_evento>/excluir", methods=["POST"])
+def excluir_evento(id_evento):
+    """Exclui o evento. Aceita SOMENTE POST — um link nao pode apagar dados."""
+    conn = conectar_banco()
+    evento = conn.execute('SELECT * FROM eventos WHERE id = ?',
+                        (id_evento,)).fetchone()
+
+    if evento is None:
+        conn.close()
+        return render_template("erro.html",
+                               mensagem=f"Nao existe evento com id {id_evento}."), 404
+
+    conn.execute('DELETE FROM eventos WHERE id = ?', (id_evento,))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for("eventos",
+                            msg=f"Registro de {evento['nome']} excluido."))
+
+
 if __name__ == "__main__":
     app.run(debug=True)
-
 

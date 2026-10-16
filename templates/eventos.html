@@ -1,0 +1,41 @@
+<!-- aba lista -->
+{% extends "base.html" %}
+
+{% block titulo %}Eventos cadastrados{% endblock %}
+
+{% block conteudo %}
+<!-- titulo da aba lista  -->
+  <h2>Eventos cadastrados</h2>
+
+  {% if msg %}
+    <p class="sucesso">{{ msg }}</p>
+  {% endif %}
+
+  <!-- botao para cadastrar novo evento -->
+  <p><a class="botao" href="{{ url_for('novo_evento') }}">+ Cadastrar novo evento</a></p>
+
+  <!-- mostra os eventos cadastrados no banco de dados -->
+  {% if eventos %}
+    <p>{{ eventos|length }} registro(s) no banco.</p>
+    <table>
+      <tr>
+        <th>Nome</th>
+        <th>Descrição</th>
+      </tr>
+      {% for p in eventos %}
+        <tr>
+            <td>{{ p['nome'] }}</td>
+            <td>{{ p['descricao'] }}</td>
+           <td>
+             <a href="{{ url_for('editar_evento', id_evento=p['id']) }}">Editar</a>
+            <form method="post"action="{{ url_for('excluir_evento', id_evento=p['id']) }}"style="display:inline" onsubmit="return confirm('Excluir este evento?');">
+        <button type="submit" class="link-perigo">Excluir</button>
+    </form>
+</td>
+      {% endfor %}
+    </table>
+  {% else %}
+  <!--se nao tiver nenhum evento cadastrado ainda -->
+    <p class="vazio">Nenhum evento cadastrado ainda.</p>
+  {% endif %}
+{% endblock %}
