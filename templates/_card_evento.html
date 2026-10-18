@@ -1,0 +1,19 @@
+{# card de um evento: usado na pagina inicial e na pagina de eventos
+     (usado com include, dentro de um "for e in eventos") #}
+<article class="card-doce card-evento">
+  <a class="card-img" href="{{ url_for('loja_evento', id_evento=e['id']) }}">
+    {% if e['imagem'] %}
+      <img src="{{ url_for('static', filename='uploads/' ~ e['imagem']) }}" alt="{{ e['nome'] }}">
+    {% else %}
+      {{ e['nome'][0]|upper }}
+    {% endif %}
+  </a>
+
+  <div class="card-corpo">
+    <h3><a href="{{ url_for('loja_evento', id_evento=e['id']) }}">{{ e['nome'] }}</a></h3>
+    {% if e['descricao'] %}
+      <p class="resumo-texto">{{ e['descricao']|truncate(110) }}</p>
+    {% endif %}
+    <a class="btn btn-contorno" href="{{ url_for('loja_evento', id_evento=e['id']) }}">Saiba mais</a>
+  </div>
+</article>

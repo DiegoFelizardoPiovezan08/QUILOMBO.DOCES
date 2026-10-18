@@ -2,10 +2,13 @@
 # Aplicacao web com Flask — CRUD completo de doces pelo navegador
 # Projeto: Quilombo Doces
 
-from flask import Flask, request, render_template, redirect, url_for,session
+import os
+import uuid
+
+from flask import (Flask, request, render_template, redirect, url_for,
+                   session, flash)
 from cadastro_sqlite import conectar_banco, validar_preco
 from urllib.parse import quote
-from flask import (Flask, request, render_template, redirect,url_for, session, flash)
 
 
 app = Flask(__name__)
@@ -13,6 +16,48 @@ app = Flask(__name__)
 
 app.secret_key = "Neymar"
 WHATSAPP = "5511998325340"  # seu número com DDI + DDD
+
+# --------------------------------------------------------------- IMAGENS
+
+# as fotos enviadas ficam em static/uploads (a pasta e criada sozinha)
+PASTA_UPLOADS = os.path.join(app.root_path, "static", "uploads")
+EXTENSOES_IMAGEM = {"png", "jpg", "jpeg", "gif", "webp"}
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024   # limite: 5 MB por envio
+
+
+def ler_imagem(campo="imagem"):
+    """Le a foto enviada no formulario.
+
+    Devolve (arquivo, erro). arquivo e None quando nada foi enviado.
+    """
+    arquivo = request.files.get(campo)
+    if arquivo is None or arquivo.filename == "":
+        return None, None
+
+    extensao = arquivo.filename.rsplit(".", 1)[-1].lower()
+    if "." not in arquivo.filename or extensao not in EXTENSOES_IMAGEM:
+        return None, "Envie uma imagem JPG, PNG, GIF ou WEBP."
+
+    return arquivo, None
+
+
+def salvar_imagem(arquivo):
+    """Grava a foto em static/uploads com um nome unico e devolve esse nome."""
+    os.makedirs(PASTA_UPLOADS, exist_ok=True)
+    extensao = arquivo.filename.rsplit(".", 1)[-1].lower()
+    nome = f"{uuid.uuid4().hex}.{extensao}"
+    arquivo.save(os.path.join(PASTA_UPLOADS, nome))
+    return nome
+
+
+def apagar_imagem(nome):
+    """Apaga a foto antiga (quando o registro e excluido ou a foto trocada)."""
+    if nome:
+        caminho = os.path.join(PASTA_UPLOADS, nome)
+        if os.path.exists(caminho):
+            os.remove(caminho)
+
+
 # --------------------------------------------------------------- LEITURA (GET)
 
 @app.route("/")
@@ -60,10 +105,7 @@ def buscar():
     return render_template("busca.html", termo=termo, doces=encontrados)
 
 
-@app.route("/sobre")
-def sobre():
-    """Pagina estatica de exemplo."""
-    return render_template("sobre.html")
+
 
 
 # --------------------------------------------------------------- VALIDACAO
@@ -119,6 +161,9 @@ def novo():
 
     conn = conectar_banco()
     erros = validar_formulario(dados, conn)
+    arquivo, erro_imagem = ler_imagem()
+    if erro_imagem:
+        erros["imagem"] = erro_imagem
 
     if erros:
         conn.close()
@@ -127,10 +172,13 @@ def novo():
                                dados=dados, erros=erros,
                                acao=url_for("novo")), 400
 
+    imagem = salvar_imagem(arquivo) if arquivo else None
+
     conn.execute(
-        'INSERT INTO doces (nome, preco) VALUES (?, ?)',
+        'INSERT INTO doces (nome, preco, imagem) VALUES (?, ?, ?)',
         (dados["nome"].title(),
-         round(float(dados["preco"].replace(",", ".")), 2)))
+         round(float(dados["preco"].replace(",", ".")), 2),
+         imagem))
     conn.commit()
     conn.close()
 
@@ -162,7 +210,11 @@ def editar(id_doce):
                                acao=url_for("editar", id_doce=id_doce))
 
     dados = ler_formulario()
+    dados["imagem"] = doce["imagem"]     # para o formulario mostrar a foto atual
     erros = validar_formulario(dados, conn, id_atual=id_doce)
+    arquivo, erro_imagem = ler_imagem()
+    if erro_imagem:
+        erros["imagem"] = erro_imagem
 
     if erros:
         conn.close()
@@ -170,10 +222,20 @@ def editar(id_doce):
                                dados=dados, erros=erros,
                                acao=url_for("editar", id_doce=id_doce)), 400
 
+    # foto: troca se veio uma nova, apaga se marcou "remover", senao mantem
+    imagem = doce["imagem"]
+    if arquivo:
+        apagar_imagem(imagem)
+        imagem = salvar_imagem(arquivo)
+    elif request.form.get("remover_imagem"):
+        apagar_imagem(imagem)
+        imagem = None
+
     conn.execute(
-        'UPDATE doces SET nome = ?, preco = ? WHERE id = ?',
+        'UPDATE doces SET nome = ?, preco = ?, imagem = ? WHERE id = ?',
         (dados["nome"].title(),
          round(float(dados["preco"].replace(",", ".")), 2),
+         imagem,
          id_doce))
     conn.commit()
     conn.close()
@@ -198,6 +260,7 @@ def excluir(id_doce):
     conn.execute('DELETE FROM doces WHERE id = ?', (id_doce,))
     conn.commit()
     conn.close()
+    apagar_imagem(doce["imagem"])
 
     return redirect(url_for("listar",
                             msg=f"Registro de {doce['nome']} excluido."))
@@ -207,6 +270,12 @@ def excluir(id_doce):
 def pagina_nao_encontrada(erro):
     return render_template("erro.html",
                            mensagem="Confira o endereco digitado."), 404
+
+
+@app.errorhandler(413)
+def arquivo_grande(erro):
+    return render_template("erro.html", titulo="Arquivo muito grande",
+                           mensagem="A imagem deve ter no maximo 5 MB."), 413
 
 
 
@@ -292,7 +361,7 @@ def montar_carrinho():
         total += subtotal
         itens.append({"id": doce["id"], "nome": doce["nome"],
                       "preco": doce["preco"], "qtd": qtd,
-                      "subtotal": subtotal})
+                      "subtotal": subtotal, "imagem": doce["imagem"]})
     conn.close()
 
     linhas = ["Olá! Gostaria de fazer este pedido:"]
@@ -308,7 +377,28 @@ def montar_carrinho():
 
 @app.route("/loja")
 def loja():
-    """Vitrine: todos os doces, ou o resultado de uma busca."""
+    """Pagina inicial da loja: carrossel e destaques."""
+    conn = conectar_banco()
+    # cada foto vira {"arquivo": caminho dentro de static, "legenda": texto}
+    slides = [{"arquivo": "uploads/" + s["imagem"], "legenda": s["legenda"]}
+              for s in conn.execute('SELECT * FROM carrossel ORDER BY id')]
+    doces = conn.execute('SELECT * FROM doces ORDER BY nome LIMIT 4').fetchall()
+    conn.close()
+
+    # nenhuma foto cadastrada na aba Carrossel: usa as fotos de static/img
+    # (carrossel-1.jpg ate carrossel-4.jpg), se existirem
+    if not slides:
+        for n in range(1, 5):
+            arquivo = f"img/carrossel-{n}.jpg"
+            if os.path.exists(os.path.join(app.static_folder, arquivo)):
+                slides.append({"arquivo": arquivo, "legenda": ""})
+
+    return render_template("loja.html", slides=slides, doces=doces)
+
+
+@app.route("/loja/produtos")
+def loja_produtos():
+    """Botao "Produtos": todos os doces, ou o resultado de uma busca."""
     termo = request.args.get("termo", "").strip().lower()
 
     conn = conectar_banco()
@@ -320,7 +410,7 @@ def loja():
         doces = conn.execute('SELECT * FROM doces ORDER BY nome').fetchall()
     conn.close()
 
-    return render_template("loja.html", doces=doces, termo=termo)
+    return render_template("loja_produtos.html", doces=doces, termo=termo)
 
 
 @app.route("/loja/doce/<int:id_doce>")
@@ -338,6 +428,45 @@ def loja_produto(id_doce):
     return render_template("loja_produto.html", doce=doce)
 
 
+@app.route("/loja/eventos")
+def loja_eventos():
+    """Botao "Eventos": todos os eventos para o consumidor."""
+    conn = conectar_banco()
+    eventos = conn.execute('SELECT * FROM eventos ORDER BY nome').fetchall()
+    conn.close()
+
+    return render_template("loja_eventos.html", eventos=eventos)
+
+
+@app.route("/loja/evento/<int:id_evento>")
+def loja_evento(id_evento):
+    """Pagina de um evento para o consumidor."""
+    conn = conectar_banco()
+    evento = conn.execute('SELECT * FROM eventos WHERE id = ?',
+                          (id_evento,)).fetchone()
+    conn.close()
+
+    if evento is None:
+        return render_template("erro.html",
+                               mensagem=f"Nao existe evento com id {id_evento}."), 404
+
+    texto = f"Olá! Tenho interesse no evento: {evento['nome']}"
+    link_whatsapp = f"https://wa.me/{WHATSAPP}?text={quote(texto)}"
+
+    return render_template("loja_evento.html", evento=evento,
+                           link_whatsapp=link_whatsapp)
+
+
+@app.route("/loja/sobre")
+def loja_sobre():
+    """Botao "Sobre": a historia da loja para o consumidor."""
+    conn = conectar_banco()
+    sobre = conn.execute('SELECT * FROM sobre ORDER BY id LIMIT 1').fetchone()
+    conn.close()
+
+    return render_template("loja_sobre.html", sobre=sobre)
+
+
 # ----------------------------------------------------------- CARRINHO
 
 @app.route("/loja/carrinho")
@@ -345,6 +474,7 @@ def loja_carrinho():
     itens, total, link_whatsapp = montar_carrinho()
     return render_template("loja_carrinho.html", itens=itens, total=total,
                            link_whatsapp=link_whatsapp)
+
 
 
 @app.route("/loja/carrinho/adicionar/<int:id_doce>", methods=["POST"])
@@ -435,6 +565,9 @@ def novo_evento():
     erros = {}
     if len(dados["nome"]) < 2:
         erros["nome"] = "O nome deve ter pelo menos 2 caracteres."
+    arquivo, erro_imagem = ler_imagem()
+    if erro_imagem:
+        erros["imagem"] = erro_imagem
 
     if erros:
         conn.close()
@@ -442,9 +575,11 @@ def novo_evento():
                                dados=dados, erros=erros,
                                acao=url_for("novo_evento")), 400
 
+    imagem = salvar_imagem(arquivo) if arquivo else None
+
     conn.execute(
-        'INSERT INTO eventos (nome, descricao) VALUES (?, ?)',
-        (dados["nome"].title(), dados["descricao"]))
+        'INSERT INTO eventos (nome, descricao, imagem) VALUES (?, ?, ?)',
+        (dados["nome"].title(), dados["descricao"], imagem))
     conn.commit()
     conn.close()
 
@@ -472,10 +607,14 @@ def editar_evento(id_evento):
     dados = {
         "nome": request.form.get("nome", "").strip(),
         "descricao": request.form.get("descricao", "").strip(),
+        "imagem": evento["imagem"],
     }
     erros = {}
     if len(dados["nome"]) < 2:
         erros["nome"] = "O nome deve ter pelo menos 2 caracteres."
+    arquivo, erro_imagem = ler_imagem()
+    if erro_imagem:
+        erros["imagem"] = erro_imagem
 
     if erros:
         conn.close()
@@ -483,9 +622,17 @@ def editar_evento(id_evento):
                                dados=dados, erros=erros,
                                acao=url_for("editar_evento", id_evento=id_evento)), 400
 
+    imagem = evento["imagem"]
+    if arquivo:
+        apagar_imagem(imagem)
+        imagem = salvar_imagem(arquivo)
+    elif request.form.get("remover_imagem"):
+        apagar_imagem(imagem)
+        imagem = None
+
     conn.execute(
-        'UPDATE eventos SET nome = ?, descricao = ? WHERE id = ?',
-        (dados["nome"].title(), dados["descricao"], id_evento))
+        'UPDATE eventos SET nome = ?, descricao = ?, imagem = ? WHERE id = ?',
+        (dados["nome"].title(), dados["descricao"], imagem, id_evento))
     conn.commit()
     conn.close()
 
@@ -506,11 +653,123 @@ def excluir_evento(id_evento):
     conn.execute('DELETE FROM eventos WHERE id = ?', (id_evento,))
     conn.commit()
     conn.close()
+    apagar_imagem(evento["imagem"])
 
     return redirect(url_for("eventos",
                             msg=f"Registro de {evento['nome']} excluido."))
 
+# ----------------------------------------------------------- SOBRE
+
+@app.route("/sobre", methods=["GET", "POST"])
+def sobre():
+    """Pagina "Sobre" da loja: UMA foto e o texto embaixo.
+
+    GET mostra o formulario ja preenchido; POST grava (cria na primeira vez,
+    depois so atualiza o mesmo registro).
+    """
+    conn = conectar_banco()
+    atual = conn.execute('SELECT * FROM sobre ORDER BY id LIMIT 1').fetchone()
+
+    if request.method == "GET":
+        conn.close()
+        return render_template("sobre.html", dados=dict(atual) if atual else {},
+                               erros={}, msg=request.args.get("msg", ""))
+
+    dados = {
+        "titulo": request.form.get("titulo", "").strip(),
+        "texto": request.form.get("texto", "").strip(),
+        "imagem": atual["imagem"] if atual else None,
+    }
+    arquivo, erro_imagem = ler_imagem()
+
+    # foto: troca se veio uma nova, apaga se marcou "remover", senao mantem
+    imagem = dados["imagem"]
+    if request.form.get("remover_imagem") and arquivo is None:
+        imagem = None
+
+    erros = {}
+    if erro_imagem:
+        erros["imagem"] = erro_imagem
+    elif not dados["texto"] and arquivo is None and imagem is None:
+        erros["texto"] = "Escreva um texto ou envie uma foto."
+
+    if erros:
+        conn.close()
+        return render_template("sobre.html", dados=dados, erros=erros, msg=""), 400
+
+    if arquivo:
+        apagar_imagem(dados["imagem"])
+        imagem = salvar_imagem(arquivo)
+    elif imagem is None:
+        apagar_imagem(dados["imagem"])
+
+    if atual:
+        conn.execute('UPDATE sobre SET titulo = ?, texto = ?, imagem = ? WHERE id = ?',
+                     (dados["titulo"], dados["texto"], imagem, atual["id"]))
+        # se ficaram blocos da versao antiga (varios blocos), apaga os extras
+        for extra in conn.execute('SELECT * FROM sobre WHERE id <> ?',
+                                  (atual["id"],)).fetchall():
+            apagar_imagem(extra["imagem"])
+        conn.execute('DELETE FROM sobre WHERE id <> ?', (atual["id"],))
+    else:
+        conn.execute('INSERT INTO sobre (titulo, texto, imagem) VALUES (?, ?, ?)',
+                     (dados["titulo"], dados["texto"], imagem))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for("sobre", msg="Página Sobre salva com sucesso!"))
+
+
+
+# ----------------------------------------------------------- CARROSSEL
+
+@app.route("/carrossel", methods=["GET", "POST"])
+def carrossel():
+    """GET mostra as fotos do carrossel; POST adiciona uma foto nova."""
+    conn = conectar_banco()
+    erros = {}
+
+    if request.method == "POST":
+        arquivo, erro_imagem = ler_imagem()
+        if arquivo is None and erro_imagem is None:
+            erro_imagem = "Escolha uma imagem para enviar."
+
+        if erro_imagem:
+            erros["imagem"] = erro_imagem
+        else:
+            conn.execute(
+                'INSERT INTO carrossel (imagem, legenda) VALUES (?, ?)',
+                (salvar_imagem(arquivo), request.form.get("legenda", "").strip()))
+            conn.commit()
+            conn.close()
+            return redirect(url_for("carrossel", msg="Foto adicionada ao carrossel!"))
+
+    slides = conn.execute('SELECT * FROM carrossel ORDER BY id').fetchall()
+    conn.close()
+
+    return render_template("carrossel.html", slides=slides, erros=erros,
+                           msg=request.args.get("msg", "")), (400 if erros else 200)
+
+
+@app.route("/carrossel/<int:id_slide>/excluir", methods=["POST"])
+def excluir_slide(id_slide):
+    """Tira uma foto do carrossel e apaga o arquivo."""
+    conn = conectar_banco()
+    slide = conn.execute('SELECT * FROM carrossel WHERE id = ?',
+                         (id_slide,)).fetchone()
+
+    if slide is None:
+        conn.close()
+        return render_template("erro.html",
+                               mensagem=f"Nao existe foto com id {id_slide}."), 404
+
+    conn.execute('DELETE FROM carrossel WHERE id = ?', (id_slide,))
+    conn.commit()
+    conn.close()
+    apagar_imagem(slide["imagem"])
+
+    return redirect(url_for("carrossel", msg="Foto removida do carrossel."))
+
 
 if __name__ == "__main__":
     app.run(debug=True)
-

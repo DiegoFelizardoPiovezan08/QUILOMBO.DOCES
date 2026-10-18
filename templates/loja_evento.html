@@ -1,0 +1,34 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}{{ evento['nome'] }}{% endblock %}
+
+{% block conteudo %}
+
+  <p class="voltar"><a href="{{ url_for('loja_eventos') }}">&larr; Voltar aos eventos</a></p>
+
+  <section class="produto">
+    <div class="produto-img">
+      {% if evento['imagem'] %}
+        <img src="{{ url_for('static', filename='uploads/' ~ evento['imagem']) }}" alt="{{ evento['nome'] }}">
+      {% else %}
+        {{ evento['nome'][0]|upper }}
+      {% endif %}
+    </div>
+
+    <div class="produto-info">
+      <h1>{{ evento['nome'] }}</h1>
+
+      {% if evento['descricao'] %}
+        <!-- white-space: pre-line no css mantem as quebras de linha da descricao -->
+        <p class="descricao">{{ evento['descricao'] }}</p>
+      {% endif %}
+
+      <a class="btn btn-whatsapp btn-grande" href="{{ link_whatsapp }}" target="_blank">
+        Tenho interesse
+      </a>
+
+      <p class="dica">Abrimos uma conversa no WhatsApp já falando deste evento.</p>
+    </div>
+  </section>
+
+{% endblock %}

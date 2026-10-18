@@ -4,44 +4,41 @@
 
 {% block conteudo %}
 
-  <!-- CARROSSEL: coloque 4 fotos em static/img/ com os nomes
-       carrossel-1.jpg, carrossel-2.jpg, carrossel-3.jpg, carrossel-4.jpg -->
+  <!-- CARROSSEL: fotos cadastradas no administrador (aba "Carrossel").
+       Sem nenhuma cadastrada, usa static/img/carrossel-1.jpg ate carrossel-4.jpg -->
   <section class="carrossel" aria-roledescription="carrossel" aria-label="Fotos da Quilombo Doces">
 
     <div class="carrossel-slides">
-      <figure class="slide slide-1 ativo">
-        <img src="{{ url_for('static', filename='img/carrossel-1.jpg') }}"
-             alt="Quilombo Doces" onerror="this.remove()">
-      </figure>
-
-      <figure class="slide slide-2">
-        <img src="{{ url_for('static', filename='img/carrossel-2.jpg') }}"
-             alt="Doces artesanais" onerror="this.remove()">
-      </figure>
-
-      <figure class="slide slide-3">
-        <img src="{{ url_for('static', filename='img/carrossel-3.jpg') }}"
-             alt="Geleias e licores" onerror="this.remove()">
-      </figure>
-
-      <figure class="slide slide-4">
-        <img src="{{ url_for('static', filename='img/carrossel-4.jpg') }}"
-             alt="Eventos Quilombo Doces" onerror="this.remove()">
-      </figure>
+      {% for s in slides %}
+        <!-- --foto: a mesma imagem, usada desfocada no fundo para preencher as laterais -->
+        <figure class="slide {% if loop.first %}ativo{% endif %}"
+        style="--foto: url('{{ url_for('static', filename=s['arquivo']) }}')">
+        <img src="{{ url_for('static', filename=s['arquivo']) }}"
+        alt="{{ s['legenda'] or 'Quilombo Doces' }}">
+          {% if s['legenda'] %}<figcaption>{{ s['legenda'] }}</figcaption>{% endif %}
+        </figure>
+      {% else %}
+        <!-- sem fotos cadastradas: mostra uma faixa de boas-vindas -->
+        <figure class="slide slide-padrao ativo">
+          <figcaption>Doces artesanais feitos com carinho</figcaption>
+        </figure>
+      {% endfor %}
     </div>
 
-    <button type="button" class="carrossel-seta anterior" aria-label="Foto anterior">&lsaquo;</button>
-    <button type="button" class="carrossel-seta proxima" aria-label="Próxima foto">&rsaquo;</button>
+    {% if slides|length > 1 %}
+      <button type="button" class="carrossel-seta anterior" aria-label="Foto anterior">&lsaquo;</button>
+      <button type="button" class="carrossel-seta proxima" aria-label="Próxima foto">&rsaquo;</button>
 
-    <div class="carrossel-pontos">
-      <button type="button" class="ponto ativo" aria-label="Foto 1"></button>
-      <button type="button" class="ponto" aria-label="Foto 2"></button>
-      <button type="button" class="ponto" aria-label="Foto 3"></button>
-      <button type="button" class="ponto" aria-label="Foto 4"></button>
-    </div>
+      <div class="carrossel-pontos">
+        {% for s in slides %}
+          <button type="button" class="ponto {% if loop.first %}ativo{% endif %}" aria-label="Foto {{ loop.index }}"></button>
+        {% endfor %}
+      </div>
+    {% endif %}
 
   </section>
 
+  {% if slides|length > 1 %}
   <script>
     (function () {
       var raiz   = document.querySelector('.carrossel');
@@ -80,33 +77,24 @@
       iniciar();
     })();
   </script>
+  {% endif %}
 
 
-  <!-- DESTAQUES (para mostrar só os 4 primeiros, troque "doces" por "doces[:4]") -->
-  <h2 class="secao-titulo">Destaques</h2>
+  <!-- DESTAQUES: os 4 primeiros doces (a rota manda so 4) -->
+  <div class="secao-cabecalho">
+    <h2 class="secao-titulo">Destaques</h2>
+    <a href="{{ url_for('loja_produtos') }}">Ver todos os produtos &rarr;</a>
+  </div>
 
   {% if doces %}
     <div class="grade">
       {% for p in doces %}
-      <article class="card-doce">
-        <a class="card-img" href="{{ url_for('loja_produto', id_doce=p['id']) }}">
-          {{ p['nome'][0]|upper }}
-        </a>
-
-        <div class="card-corpo">
-          <h3><a href="{{ url_for('loja_produto', id_doce=p['id']) }}">{{ p['nome'] }}</a></h3>
-          <p class="preco">R$ {{ p['preco']|brl }}</p>
-
-          <form method="post" action="{{ url_for('loja_adicionar', id_doce=p['id']) }}">
-            <button type="submit" class="btn btn-principal">Adicionar ao carrinho</button>
-          </form>
-        </div>
-      </article>
+        {% include "_card_doce.html" %}
       {% endfor %}
     </div>
-
   {% else %}
     <p class="vazio">Ainda não temos doces disponíveis. Volte em breve!</p>
   {% endif %}
+
 
 {% endblock %}

@@ -4,11 +4,17 @@
 
 {% block conteudo %}
 
-  <p class="voltar"><a href="{{ url_for('loja') }}">&larr; Voltar aos doces</a></p>
+  <p class="voltar"><a href="{{ url_for('loja_produtos') }}">&larr; Voltar aos doces</a></p>
 
   <section class="produto">
-    <!-- sem foto ainda: mostra a inicial do doce -->
-    <div class="produto-img">{{ doce['nome'][0]|upper }}</div>
+    <!-- foto do doce; sem foto, mostra a inicial -->
+    <div class="produto-img">
+      {% if doce['imagem'] %}
+        <img src="{{ url_for('static', filename='uploads/' ~ doce['imagem']) }}" alt="{{ doce['nome'] }}">
+      {% else %}
+        {{ doce['nome'][0]|upper }}
+      {% endif %}
+    </div>
 
     <div class="produto-info">
       <h1>{{ doce['nome'] }}</h1>

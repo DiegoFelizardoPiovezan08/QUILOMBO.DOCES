@@ -10,7 +10,8 @@
     <p class="erro-geral">Corrija os campos indicados abaixo.</p>
   {% endif %}
 
-  <form method="post" action="{{ acao }}">
+  <!-- enctype="multipart/form-data" e obrigatorio para enviar arquivos -->
+  <form method="post" action="{{ acao }}" enctype="multipart/form-data">
 
     <p>
       <!-- digita o nome e ve se da erro -->
@@ -24,6 +25,18 @@
       <label for="preco">Preço</label>
       <input type="text" id="preco" name="preco" value="{{ dados.get('preco', '') }}">
       {% if erros.get('preco') %}<span class="erro">{{ erros['preco'] }}</span>{% endif %}
+    </p>
+
+    <p>
+      <!-- foto do doce (opcional) -->
+      <label for="imagem">Foto</label>
+      {% if dados.get('imagem') %}
+        <img class="foto-atual" src="{{ url_for('static', filename='uploads/' ~ dados['imagem']) }}" alt="Foto atual">
+        <label class="check"><input type="checkbox" name="remover_imagem" value="1"> Remover foto atual</label>
+      {% endif %}
+      <input type="file" id="imagem" name="imagem" accept="image/*">
+      <span class="dica">JPG, PNG, GIF ou WEBP, até 5 MB. {% if dados.get('imagem') %}Escolha outra para trocar.{% endif %}</span>
+      {% if erros.get('imagem') %}<span class="erro">{{ erros['imagem'] }}</span>{% endif %}
     </p>
 
     <p>

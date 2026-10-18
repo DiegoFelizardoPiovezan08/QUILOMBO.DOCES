@@ -1,0 +1,25 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}Sobre{% endblock %}
+
+{% block conteudo %}
+
+  {% if sobre and (sobre['imagem'] or sobre['texto']) %}
+    <!-- uma foto em cima e o texto embaixo, direto na pagina (sem quadros) -->
+    <section class="sobre">
+      {% if sobre['imagem'] %}
+        <img class="sobre-img" src="{{ url_for('static', filename='uploads/' ~ sobre['imagem']) }}"
+             alt="{{ sobre['titulo'] or 'Quilombo Doces' }}">
+      {% endif %}
+
+      <h2 class="secao-titulo">{{ sobre['titulo'] or 'Nossa história' }}</h2>
+      {% if sobre['texto'] %}
+        <p class="sobre-texto">{{ sobre['texto'] }}</p>
+      {% endif %}
+    </section>
+  {% else %}
+    <h2 class="secao-titulo">Nossa história</h2>
+    <p class="vazio">Em breve contaremos a nossa história aqui.</p>
+  {% endif %}
+
+{% endblock %}

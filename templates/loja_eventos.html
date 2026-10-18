@@ -1,0 +1,36 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}Eventos{% endblock %}
+
+{% block conteudo %}
+
+  <h2 class="secao-titulo">Eventos</h2>
+  <p class="secao-intro">Festas, feiras e encomendas especiais da Quilombo Doces.</p>
+
+  {% if eventos %}
+    <!-- cada evento: foto de um lado e texto do outro (alternando a cada evento).
+         Clicar na foto, no nome ou em "Saiba mais" abre a pagina do evento -->
+    {% for e in eventos %}
+      <article class="evento-bloco {% if loop.index is even %}invertido{% endif %}">
+        <a class="evento-img" href="{{ url_for('loja_evento', id_evento=e['id']) }}">
+          {% if e['imagem'] %}
+            <img src="{{ url_for('static', filename='uploads/' ~ e['imagem']) }}" alt="{{ e['nome'] }}">
+          {% else %}
+            {{ e['nome'][0]|upper }}
+          {% endif %}
+        </a>
+
+        <div class="evento-texto">
+          <h3><a href="{{ url_for('loja_evento', id_evento=e['id']) }}">{{ e['nome'] }}</a></h3>
+          {% if e['descricao'] %}
+            <p>{{ e['descricao']|truncate(220) }}</p>
+          {% endif %}
+          <a class="btn btn-principal" href="{{ url_for('loja_evento', id_evento=e['id']) }}">Saiba mais</a>
+        </div>
+      </article>
+    {% endfor %}
+  {% else %}
+    <p class="vazio">Nenhum evento por enquanto. Volte em breve!</p>
+  {% endif %}
+
+{% endblock %}

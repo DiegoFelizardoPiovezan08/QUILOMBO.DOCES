@@ -4,19 +4,36 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}Nossos doces{% endblock %} | Quilombo Doces</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='loja.css') }}">
+    <!-- fontes do logo: Poppins (textos) e Kaushan Script ("Quilombo") -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='loja.css') }}">
 </head>
 <body>
 
   <!-- topo: logo e menu (Produtos, Eventos, Carrinho) -->
   <header class="topo">
     <div class="topo-conteudo">
-      <a class="logo" href="{{ url_for('loja') }}">Quilombo <span>Doces</span></a>
+            <!-- logo: circulo + "Quilombo" + "DOCES" -->
+      <a class="logo" href="{{ url_for('loja') }}">
+        <img class="logo-img" src="{{ url_for('static', filename='img/logo.png') }}" alt="">
+        <span class="logo-texto">
+          <span class="logo-nome">Quilombo</span>
+          <span class="logo-sub">Doces</span>
+        </span>
+      </a>
 
+      <!-- a classe "ativo" pinta o botao da pagina em que a pessoa esta -->
       <nav class="menu">
-        <a href="{{ url_for('loja') }}">Produtos</a>
-        <a href="#">Eventos</a>
-        <a class="carrinho-link" href="{{ url_for('loja_carrinho') }}">
+        <a href="{{ url_for('loja_produtos') }}"
+           {% if request.endpoint in ('loja_produtos', 'loja_produto') %}class="ativo"{% endif %}>Produtos</a>
+        <a href="{{ url_for('loja_eventos') }}"
+           {% if request.endpoint in ('loja_eventos', 'loja_evento') %}class="ativo"{% endif %}>Eventos</a>
+                   <a href="{{ url_for('loja_sobre') }}"
+           {% if request.endpoint == 'loja_sobre' %}class="ativo"{% endif %}>Sobre</a>
+        <a class="carrinho-link {% if request.endpoint == 'loja_carrinho' %}ativo{% endif %}"
+           href="{{ url_for('loja_carrinho') }}">
           Carrinho
           {% if qtd_carrinho %}<span class="contador">{{ qtd_carrinho }}</span>{% endif %}
         </a>
@@ -40,8 +57,6 @@
     <p>Quilombo Doces &mdash; feitos com carinho.</p>
     <p>
       <a href="https://wa.me/{{ whatsapp }}" target="_blank">Fale com a gente no WhatsApp</a>
-      &middot;
-      <a href="{{ url_for('listar') }}">Área administrativa</a>
     </p>
   </footer>
 

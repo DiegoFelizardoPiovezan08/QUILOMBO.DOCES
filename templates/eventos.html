@@ -1,10 +1,10 @@
-<!-- aba lista -->
+<!-- aba eventos -->
 {% extends "base.html" %}
 
 {% block titulo %}Eventos cadastrados{% endblock %}
 
 {% block conteudo %}
-<!-- titulo da aba lista  -->
+<!-- titulo da aba eventos  -->
   <h2>Eventos cadastrados</h2>
 
   {% if msg %}
@@ -19,19 +19,30 @@
     <p>{{ eventos|length }} registro(s) no banco.</p>
     <table>
       <tr>
+        <th>Foto</th>
         <th>Nome</th>
         <th>Descrição</th>
+        <th></th>
       </tr>
       {% for p in eventos %}
         <tr>
-            <td>{{ p['nome'] }}</td>
-            <td>{{ p['descricao'] }}</td>
-           <td>
-             <a href="{{ url_for('editar_evento', id_evento=p['id']) }}">Editar</a>
-            <form method="post"action="{{ url_for('excluir_evento', id_evento=p['id']) }}"style="display:inline" onsubmit="return confirm('Excluir este evento?');">
-        <button type="submit" class="link-perigo">Excluir</button>
-    </form>
-</td>
+          <td>
+            {% if p['imagem'] %}
+              <img class="miniatura" src="{{ url_for('static', filename='uploads/' ~ p['imagem']) }}" alt="">
+            {% else %}
+              <span class="miniatura sem-foto">{{ p['nome'][0]|upper }}</span>
+            {% endif %}
+          </td>
+          <td>{{ p['nome'] }}</td>
+          <td>{{ p['descricao'] }}</td>
+          <td>
+            <a href="{{ url_for('editar_evento', id_evento=p['id']) }}">Editar</a>
+            <form method="post" action="{{ url_for('excluir_evento', id_evento=p['id']) }}"
+                  onsubmit="return confirm('Excluir este evento?');">
+              <button type="submit" class="link-perigo">Excluir</button>
+            </form>
+          </td>
+        </tr>
       {% endfor %}
     </table>
   {% else %}

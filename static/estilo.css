@@ -1,19 +1,18 @@
 /* ==========================================================
-   estilo.css — Quilombo Doces
-   Paleta do Manual de Identidade Visual.
-   Para trocar as cores do site inteiro, mude so as
-   variaveis do bloco :root abaixo.
+   estilo.css — Quilombo Doces (area do ADMINISTRADOR)
+   Usado pelo templates/base.html.
+   Paleta do Manual de Identidade Visual. Para trocar as cores,
+   mude so as variaveis do bloco :root abaixo.
    ========================================================== */
 
 :root {
   --areia:        #f2e4c8;   /* Areia da Bahia: fundo da pagina */
-  --areia-escura: #f2e4c8;   /* faixas e cabecalho da tabela */
+  --areia-escura: #e8d5ae;   /* faixas e cabecalho da tabela */
   --cacau:        #2b1a14;   /* 100% Cacau: texto */
   --raiz:         #4a2a1e;   /* Raiz Ancestral: cabecalho e rodape */
   --cacau-2:      #2b1a14;   /* hover do botao padrao */
   --terracota:    #c35a1e;   /* Ceramica Terracota: destaque (botoes principais) */
-  --terracota-sombra: #c35a1e63; /* sombra suave da terracota */
-  --terracota-hover:  #4a2a1e;
+  --terracota-hover: #4a2a1e;
   --ouro:         #ef9319;   /* Ouro de Dende: detalhes */
   --ouro-hover:   #d6820f;
   --verde:        #25d366;   /* WhatsApp */
@@ -24,17 +23,22 @@
   --erro-bg:      #fdecea;
   --branco:       #ffffff;
   --borda:        #dcc9a0;
+  --texto-suave:  #6b4a3a;
   --raio:         10px;
+  --raio-grande:  12px;
   --sombra:       0 2px 10px rgba(74, 42, 30, 0.10);
-}
+    --sombra-forte: 0 8px 20px rgba(74, 42, 30, 0.18);
 
-/* ---------- base ---------- */
+  /* fontes do logo (carregadas do Google Fonts no base.html / base_loja.html) */
+  --fonte-texto:  "Poppins", Arial, sans-serif;   /* textos, titulos e botoes */
+  --fonte-marca:  "Kaushan Script", cursive;       /* "Quilombo" e letras grandes */
+}
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  font-family: var(--fonte-texto);
   font-size: 16px;
   line-height: 1.5;
   color: var(--cacau);
@@ -45,16 +49,38 @@ body {
 }
 
 h1, h2, h3 {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--fonte-texto);
+  font-weight: 600;
   line-height: 1.2;
 }
 
 a { color: var(--terracota); }
 a:hover { color: var(--terracota-hover); }
 
+img { max-width: 100%; }
+
+/* mensagens de dica e "vazio" (usadas nas duas areas) */
+.dica {
+  display: block;
+  color: var(--texto-suave);
+  font-size: 0.88rem;
+  margin-top: 6px;
+}
+
+.vazio {
+  text-align: center;
+  color: var(--texto-suave);
+  font-style: italic;
+  padding: 24px 0;
+}
+
+.centro { text-align: center; }
+
+
 /* ---------- cabecalho e menu ---------- */
 
 header {
+  position: relative;
   background: var(--raiz);
   color: var(--areia);
   padding: 18px 24px 0;
@@ -63,9 +89,64 @@ header {
 
 header h1 {
   margin: 0 0 12px;
-  font-size: 1.8rem;
-  letter-spacing: 1px;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+}
+
+/* logo: circulo + "Quilombo" (fonte do logo) + "DOCES" (Poppins fina) */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--areia);
+  text-decoration: none;
+}
+.logo:hover { color: var(--areia); }
+
+.logo-img {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+}
+
+.logo-texto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;   /* "DOCES" alinhado a direita, como no logo */
+  line-height: 1;
+}
+
+.logo-nome {
+  font-family: var(--fonte-marca);
+  font-size: 2rem;
+  letter-spacing: 0.5px;
+}
+
+.logo-sub {
+  font-family: var(--fonte-texto);
+  font-weight: 300;
+  font-size: 1rem;
+  letter-spacing: 0.25em;
+  margin-right: -0.25em;    /* compensa o espaco depois da ultima letra */
+  text-transform: uppercase;
+  color: var(--ouro);
+}
+
+/* "Sistema de Cadastro" ao lado do logo, separado por uma linha */
+.logo-area {
+  margin-left: 6px;
+  padding-left: 16px;
+  border-left: 2px solid rgba(242, 228, 200, 0.35);
+  font-family: var(--fonte-texto);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+
+.botao-loja:hover {
+  background: var(--ouro);
+  color: var(--cacau);
 }
 
 nav {
@@ -88,6 +169,18 @@ nav a {
 nav a:hover {
   background: var(--terracota);
   color: var(--branco);
+}
+
+
+/* botao "Ir para a loja": fica no menu, com destaque dourado */
+nav a.botao-loja {
+  margin-left: 10px;
+  background: var(--ouro);
+  color: var(--cacau);
+}
+nav a.botao-loja:hover {
+  background: var(--areia);
+  color: var(--cacau);
 }
 
 /* ---------- conteudo ---------- */
@@ -145,6 +238,12 @@ td {
 }
 
 tr:hover td { background: rgba(242, 228, 200, 0.45); }
+
+/* formularios dentro da tabela ficam na mesma linha */
+td form {
+  display: inline-block;
+  margin: 4px 2px;
+}
 
 /* ---------- botoes ---------- */
 
@@ -224,12 +323,18 @@ button:hover { background: var(--cacau-2); }
   color: #8c1f15;
 }
 
-/* formularios dentro da tabela ficam na mesma linha */
-td form {
-  display: inline-block;
-  margin: 4px 2px;
+/* ---------- formularios ---------- */
+
+form p { margin: 0 0 16px; }
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
 }
 
+input[type="text"],
+input[type="number"],
 textarea {
   width: 100%;
   max-width: 420px;
@@ -243,35 +348,50 @@ textarea {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* ---------- formularios ---------- */
-
-form p { margin: 0 0 16px; }
-
-label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-input[type="text"],
-input[type="number"] {
-  width: 100%;
-  max-width: 420px;
-  padding: 10px 12px;
-  font-family: inherit;
-  font-size: 1rem;
-  color: var(--cacau);
-  background: var(--areia);
-  border: 2px solid var(--borda);
-  border-radius: var(--raio);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
+textarea { max-width: 100%; resize: vertical; }
 
 input[type="text"]:focus,
-input[type="number"]:focus {
+input[type="number"]:focus,
+textarea:focus {
   outline: none;
   border-color: var(--terracota);
   box-shadow: 0 0 0 3px rgba(195, 90, 30, 0.18);
+}
+
+/* campo de escolher arquivo (fotos) */
+input[type="file"] {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  padding: 10px;
+  font-family: inherit;
+  background: var(--areia);
+  border: 2px dashed var(--borda);
+  border-radius: var(--raio);
+  cursor: pointer;
+}
+input[type="file"]:hover { border-color: var(--terracota); }
+
+input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: var(--raio);
+  background: var(--terracota);
+  color: var(--branco);
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* checkbox "Remover foto atual" */
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  margin: 8px 0 10px;
+  cursor: pointer;
 }
 
 /* formulario de busca: campo e botao lado a lado */
@@ -282,6 +402,93 @@ form[method="get"] {
   margin-bottom: 16px;
 }
 form[method="get"] input[type="text"] { flex: 1; min-width: 200px; }
+
+/* caixa de envio de foto (aba Carrossel) */
+.caixa-envio {
+  padding: 18px 20px 4px;
+  margin-bottom: 24px;
+  background: var(--areia);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+.caixa-envio input[type="file"],
+.caixa-envio input[type="text"] { background: var(--branco); }
+
+/* ---------- fotos ---------- */
+
+/* miniatura na tabela (lista de doces e de eventos) */
+.miniatura {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;     /* mostra a foto inteira */
+  background: var(--branco);
+  border-radius: 8px;
+  border: 1px solid var(--borda);
+}
+.miniatura.sem-foto {
+  background: linear-gradient(135deg, var(--areia-escura), var(--ouro));
+  color: var(--raiz);
+  font-family: Georgia, serif;
+  font-weight: bold;
+  font-size: 1.4rem;
+}
+
+/* foto atual no formulario de editar */
+.foto-atual {
+  display: block;
+  width: 160px;
+  height: 120px;
+  object-fit: contain;     /* mostra a foto inteira */
+  background: var(--areia);
+  border-radius: var(--raio);
+  border: 1px solid var(--borda);
+}
+
+/* foto grande na pagina de detalhe */
+.foto-detalhe {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: auto;            /* formato original da foto */
+  max-height: 420px;
+  object-fit: contain;
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  margin-bottom: 16px;
+}
+
+/* grade de fotos do carrossel */
+.grade-fotos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.grade-fotos figure {
+  margin: 0;
+  background: var(--areia);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  overflow: hidden;
+}
+.grade-fotos img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  object-fit: contain;     /* mostra a foto inteira */
+  background: var(--raiz);
+}
+.grade-fotos figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+.grade-fotos form { margin: 0; }
 
 /* ---------- mensagens ---------- */
 
@@ -306,13 +513,6 @@ form[method="get"] input[type="text"] { flex: 1; min-width: 200px; }
   border-left: 5px solid var(--perigo);
   padding: 12px 16px;
   border-radius: 6px;
-}
-
-.vazio {
-  text-align: center;
-  color: var(--raiz);
-  font-style: italic;
-  padding: 24px 0;
 }
 
 /* ---------- pagina de detalhe ---------- */
@@ -344,8 +544,11 @@ main h3 {
     box-shadow: none;
   }
 
-  header h1 { font-size: 1.4rem; }
+  .logo-img { width: 46px; height: 46px; }
+  .logo-nome { font-size: 1.6rem; }
+  .logo-area { font-size: 0.85rem; padding-left: 10px; }
   nav a { padding: 8px 12px; font-size: 0.9rem; }
+
 
   /* tabela rola para o lado em vez de estourar a tela */
   table { display: block; overflow-x: auto; white-space: nowrap; }

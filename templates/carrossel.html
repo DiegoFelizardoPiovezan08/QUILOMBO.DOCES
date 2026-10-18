@@ -1,0 +1,48 @@
+<!-- aba carrossel: fotos que aparecem no topo da loja -->
+{% extends "base.html" %}
+
+{% block titulo %}Carrossel da loja{% endblock %}
+
+{% block conteudo %}
+  <h2>Carrossel da loja</h2>
+
+  {% if msg %}
+    <p class="sucesso">{{ msg }}</p>
+  {% endif %}
+
+  <!-- formulario para enviar uma foto nova -->
+  <form method="post" action="{{ url_for('carrossel') }}" enctype="multipart/form-data" class="caixa-envio">
+    <p>
+      <label for="imagem">Nova foto</label>
+      <input type="file" id="imagem" name="imagem" accept="image/*">
+      <span class="dica">Use fotos deitadas (paisagem), por exemplo 1600 x 600 px. Até 5 MB.</span>
+      {% if erros.get('imagem') %}<span class="erro">{{ erros['imagem'] }}</span>{% endif %}
+    </p>
+    <p>
+      <label for="legenda">Legenda (opcional)</label>
+      <input type="text" id="legenda" name="legenda" placeholder="Ex.: Doces artesanais">
+    </p>
+    <p><button type="submit">Adicionar ao carrossel</button></p>
+  </form>
+
+  <!-- fotos que ja estao no carrossel, na ordem em que aparecem -->
+  {% if slides %}
+    <p>{{ slides|length }} foto(s) no carrossel.</p>
+    <div class="grade-fotos">
+      {% for s in slides %}
+        <figure>
+          <img src="{{ url_for('static', filename='uploads/' ~ s['imagem']) }}" alt="{{ s['legenda'] or 'Foto do carrossel' }}">
+          <figcaption>
+            <span>{{ s['legenda'] or 'Sem legenda' }}</span>
+            <form method="post" action="{{ url_for('excluir_slide', id_slide=s['id']) }}"
+                  onsubmit="return confirm('Remover esta foto do carrossel?');">
+              <button type="submit" class="link-perigo">Remover</button>
+            </form>
+          </figcaption>
+        </figure>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="vazio">Nenhuma foto no carrossel ainda.</p>
+  {% endif %}
+{% endblock %}

@@ -1,16 +1,42 @@
 {% extends "base.html" %}
+
+{% block titulo %}{{ titulo }}{% endblock %}
+
 {% block conteudo %}
 <h2>{{ titulo }}</h2>
-<form method="post" action="{{ acao }}">
-    <label>Nome</label>
-    <input type="text" name="nome" value="{{ dados.get('nome', '') }}">
-    {% if erros.get('nome') %}<p class="erro">{{ erros['nome'] }}</p>{% endif %}
 
-    <label>Descrição</label>
-    <textarea name="descricao" rows="7" cols="120">{{ dados.get('descricao', '') }}</textarea><br></br>
-    {% if erros.get('descricao') %}<p class="erro">{{ erros['descricao'] }}</p>{% endif %}
+{% if erros %}
+  <p class="erro-geral">Corrija os campos indicados abaixo.</p>
+{% endif %}
 
+<!-- enctype="multipart/form-data" e obrigatorio para enviar arquivos -->
+<form method="post" action="{{ acao }}" enctype="multipart/form-data">
+  <p>
+    <label for="nome">Nome</label>
+    <input type="text" id="nome" name="nome" value="{{ dados.get('nome', '') }}">
+    {% if erros.get('nome') %}<span class="erro">{{ erros['nome'] }}</span>{% endif %}
+  </p>
+
+  <p>
+    <label for="descricao">Descrição</label>
+    <textarea id="descricao" name="descricao" rows="7">{{ dados.get('descricao', '') or '' }}</textarea>
+  </p>
+
+  <p>
+    <!-- foto do evento (opcional) -->
+    <label for="imagem">Foto</label>
+    {% if dados.get('imagem') %}
+      <img class="foto-atual" src="{{ url_for('static', filename='uploads/' ~ dados['imagem']) }}" alt="Foto atual">
+      <label class="check"><input type="checkbox" name="remover_imagem" value="1"> Remover foto atual</label>
+    {% endif %}
+    <input type="file" id="imagem" name="imagem" accept="image/*">
+    <span class="dica">JPG, PNG, GIF ou WEBP, até 5 MB. {% if dados.get('imagem') %}Escolha outra para trocar.{% endif %}</span>
+    {% if erros.get('imagem') %}<span class="erro">{{ erros['imagem'] }}</span>{% endif %}
+  </p>
+
+  <p>
     <button type="submit">Salvar</button>
     <a href="{{ url_for('eventos') }}">Cancelar</a>
+  </p>
 </form>
 {% endblock %}

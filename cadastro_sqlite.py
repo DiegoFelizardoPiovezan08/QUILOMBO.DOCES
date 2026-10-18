@@ -32,9 +32,34 @@ def conectar_banco():
             CREATE TABLE IF NOT EXISTS eventos (
                 id     INTEGER PRIMARY KEY AUTOINCREMENT,
                 nome   TEXT    NOT NULL,
-                descricao TEXT 
+                descricao TEXT
             )
         ''')
+
+    # fotos do carrossel da loja (imagem = nome do arquivo em static/uploads)
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS carrossel (
+                id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                imagem  TEXT    NOT NULL,
+                legenda TEXT
+            )
+        ''')
+
+        # blocos da pagina "Sobre" (historia da loja): titulo, texto e foto
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS sobre (
+                id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                titulo  TEXT,
+                texto   TEXT,
+                imagem  TEXT
+            )
+        ''')
+
+    # coluna "imagem" em doces e eventos: so e criada se o banco for antigo
+    for tabela in ("doces", "eventos"):
+        colunas = [c["name"] for c in conn.execute(f"PRAGMA table_info({tabela})")]
+        if "imagem" not in colunas:
+            conn.execute(f"ALTER TABLE {tabela} ADD COLUMN imagem TEXT")
     conn.commit()
     return conn
 

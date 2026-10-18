@@ -1,0 +1,33 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}Produtos{% endblock %}
+
+{% block conteudo %}
+
+  <h2 class="secao-titulo">Nossos produtos</h2>
+
+  <!-- busca pelo nome do doce -->
+  <form class="busca" method="get" action="{{ url_for('loja_produtos') }}">
+    <input type="search" name="termo" value="{{ termo }}" placeholder="Procurar um doce...">
+    <button type="submit" class="btn btn-principal">Buscar</button>
+    {% if termo %}<a class="btn btn-contorno" href="{{ url_for('loja_produtos') }}">Limpar</a>{% endif %}
+  </form>
+
+  {% if termo %}
+    <p class="resultado">{{ doces|length }} resultado(s) para "{{ termo }}"</p>
+  {% endif %}
+
+  {% if doces %}
+        <!-- "grade-lista": nesta pagina os cards ficam deitados (foto na esquerda, texto na direita) -->
+    <div class="grade grade-lista">
+      {% for p in doces %}
+        {% include "_card_doce.html" %}
+      {% endfor %}
+    </div>
+  {% elif termo %}
+    <p class="vazio">Nenhum doce encontrado com "{{ termo }}".</p>
+  {% else %}
+    <p class="vazio">Ainda não temos doces disponíveis. Volte em breve!</p>
+  {% endif %}
+
+{% endblock %}

@@ -1,0 +1,48 @@
+<!-- aba sobre: UMA foto e o texto que aparecem na pagina "Sobre" da loja -->
+{% extends "base.html" %}
+
+{% block titulo %}Sobre a loja{% endblock %}
+
+{% block conteudo %}
+<h2>Sobre a loja</h2>
+
+{% if msg %}
+  <p class="sucesso">{{ msg }}</p>
+{% endif %}
+
+{% if erros %}
+  <p class="erro-geral">Corrija os campos indicados abaixo.</p>
+{% endif %}
+
+<p>Na loja aparece a foto em cima e o texto embaixo. Para mudar, é só editar aqui e salvar de novo.
+   <a href="{{ url_for('loja_sobre') }}">Ver como está na loja &rarr;</a></p>
+
+<!-- enctype="multipart/form-data" e obrigatorio para enviar arquivos -->
+<form method="post" action="{{ url_for('sobre') }}" enctype="multipart/form-data">
+  <p>
+    <label for="imagem">Foto</label>
+    {% if dados.get('imagem') %}
+      <img class="foto-atual" src="{{ url_for('static', filename='uploads/' ~ dados['imagem']) }}" alt="Foto atual">
+      <label class="check"><input type="checkbox" name="remover_imagem" value="1"> Remover foto atual</label>
+    {% endif %}
+    <input type="file" id="imagem" name="imagem" accept="image/*">
+    <span class="dica">JPG, PNG, GIF ou WEBP, até 5 MB. {% if dados.get('imagem') %}Escolha outra para trocar.{% endif %}</span>
+    {% if erros.get('imagem') %}<span class="erro">{{ erros['imagem'] }}</span>{% endif %}
+  </p>
+
+  <p>
+    <label for="titulo">Título (opcional)</label>
+    <input type="text" id="titulo" name="titulo" value="{{ dados.get('titulo', '') or '' }}"
+           placeholder="Ex.: Nossa história">
+  </p>
+
+  <p>
+    <label for="texto">Texto</label>
+    <textarea id="texto" name="texto" rows="12">{{ dados.get('texto', '') or '' }}</textarea>
+    <span class="dica">As quebras de linha que você digitar aparecem na loja.</span>
+    {% if erros.get('texto') %}<span class="erro">{{ erros['texto'] }}</span>{% endif %}
+  </p>
+
+  <p><button type="submit">Salvar</button></p>
+</form>
+{% endblock %}

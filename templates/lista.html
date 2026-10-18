@@ -19,11 +19,21 @@
     <p>{{ doces|length }} registro(s) no banco.</p>
     <table>
       <tr>
+        <th>Foto</th>
         <th>Nome</th>
         <th>Preco</th>
+        <th></th>
       </tr>
       {% for p in doces %}
       <tr>
+        <td>
+          <!-- miniatura da foto (ou a inicial, se nao tiver foto) -->
+          {% if p['imagem'] %}
+            <img class="miniatura" src="{{ url_for('static', filename='uploads/' ~ p['imagem']) }}" alt="">
+          {% else %}
+            <span class="miniatura sem-foto">{{ p['nome'][0]|upper }}</span>
+          {% endif %}
+        </td>
         <td><a href="{{ url_for('detalhe', id_doce=p['id']) }}">{{ p['nome'] }}</a></td>
         <td>{{ p['preco'] }} </td>
         <td>

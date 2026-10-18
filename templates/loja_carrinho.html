@@ -13,7 +13,13 @@
       <div class="carrinho-itens">
         {% for item in itens %}
         <div class="item">
-          <div class="item-img">{{ item.nome[0]|upper }}</div>
+          <div class="item-img">
+            {% if item.imagem %}
+              <img src="{{ url_for('static', filename='uploads/' ~ item.imagem) }}" alt="">
+            {% else %}
+              {{ item.nome[0]|upper }}
+            {% endif %}
+          </div>
 
           <div class="item-info">
             <h3>{{ item.nome }}</h3>
@@ -51,7 +57,7 @@
 
         <p class="dica">Ao clicar, abrimos uma conversa com o seu pedido já escrito.</p>
 
-        <a class="btn btn-contorno" href="{{ url_for('loja') }}">Continuar comprando</a>
+        <a class="btn btn-contorno" href="{{ url_for('loja_produtos') }}">Continuar comprando</a>
 
         <form method="post" action="{{ url_for('loja_limpar') }}">
           <button type="submit" class="btn-link">Esvaziar carrinho</button>
@@ -62,7 +68,7 @@
 
   {% else %}
     <p class="vazio">Seu carrinho está vazio.</p>
-    <p class="centro"><a class="btn btn-principal" href="{{ url_for('loja') }}">Ver nossos doces</a></p>
+    <p class="centro"><a class="btn btn-principal" href="{{ url_for('loja_produtos') }}">Ver nossos doces</a></p>
   {% endif %}
 
 {% endblock %}

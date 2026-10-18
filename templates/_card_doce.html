@@ -1,0 +1,20 @@
+{# card de um doce: usado na pagina inicial e na pagina de produtos
+     (usado com include, dentro de um "for p in doces") #}
+<article class="card-doce">
+  <a class="card-img" href="{{ url_for('loja_produto', id_doce=p['id']) }}">
+    {% if p['imagem'] %}
+      <img src="{{ url_for('static', filename='uploads/' ~ p['imagem']) }}" alt="{{ p['nome'] }}">
+    {% else %}
+      {{ p['nome'][0]|upper }}
+    {% endif %}
+  </a>
+
+  <div class="card-corpo">
+    <h3><a href="{{ url_for('loja_produto', id_doce=p['id']) }}">{{ p['nome'] }}</a></h3>
+    <p class="preco">R$ {{ p['preco']|brl }}</p>
+
+    <form method="post" action="{{ url_for('loja_adicionar', id_doce=p['id']) }}">
+      <button type="submit" class="btn btn-principal">Adicionar ao carrinho</button>
+    </form>
+  </div>
+</article>

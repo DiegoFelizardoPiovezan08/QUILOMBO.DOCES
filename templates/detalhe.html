@@ -6,6 +6,11 @@
   <!-- titulo do nome do doce -->
   <h2>{{ doce['nome'] }}</h2>
 
+  <!-- foto do doce, se tiver -->
+  {% if doce['imagem'] %}
+    <img class="foto-detalhe" src="{{ url_for('static', filename='uploads/' ~ doce['imagem']) }}" alt="{{ doce['nome'] }}">
+  {% endif %}
+
   <ul class="detalhe">
     <!-- ID e preco do doce -->
     <li><b>ID:</b> {{ doce['id'] }}</li>
@@ -20,7 +25,7 @@
 
   <!-- botão para excluir as informações dos doces e/ou voltar para a lista -->
   <form method="post" action="{{ url_for('excluir', id_doce=doce['id']) }}"
-        onsubmit='return confirm({{ ("Excluir " ~ doce["nome"] ~ "? Esta acao nao pode ser desfeita.")|tojson }});';
+        onsubmit='return confirm({{ ("Excluir " ~ doce["nome"] ~ "? Esta acao nao pode ser desfeita.")|tojson }});'>
     <button type="submit" class="perigo">Excluir este registro</button>
   </form>
 {% endblock %}
