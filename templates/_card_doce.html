@@ -11,6 +11,9 @@
 
   <div class="card-corpo">
     <h3><a href="{{ url_for('loja_produto', id_doce=p['id']) }}">{{ p['nome'] }}</a></h3>
+    {% if p['descricao'] %}
+      <p class="card-descricao">{{ p['descricao']|truncate(100) }}</p>
+    {% endif %}
     <p class="preco">R$ {{ p['preco']|brl }}</p>
 
     <form method="post" action="{{ url_for('loja_adicionar', id_doce=p['id']) }}">

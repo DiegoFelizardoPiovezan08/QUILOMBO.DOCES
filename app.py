@@ -5,6 +5,9 @@
 import os
 import uuid
 
+import qrcode
+import qrcode.image.svg
+
 from flask import (Flask, request, render_template, redirect, url_for,
                    session, flash)
 from cadastro_sqlite import conectar_banco, validar_preco
@@ -16,6 +19,53 @@ app = Flask(__name__)
 
 app.secret_key = "Neymar"
 WHATSAPP = "5511998325340"  # seu número com DDI + DDD
+
+# --------------------------------------------------------------- PIX
+# dados de quem recebe o Pix (aparecem no app do banco de quem paga)
+PIX_CHAVE = "39656059840"     # chave Pix: CPF 396.560.598-40, so os numeros
+PIX_NOME = "QUILOMBO DOCES"   # ate 25 letras, sem acento
+PIX_CIDADE = "SAO PAULO"      # ate 15 letras, sem acento
+
+
+def campo_pix(codigo, valor):
+    """Monta um campo do Pix: codigo (2 digitos) + tamanho (2 digitos) + valor."""
+    return f"{codigo}{len(valor):02d}{valor}"
+
+
+def crc16_pix(texto):
+    """Digito verificador do Pix (CRC16-CCITT), exigido pelo Banco Central."""
+    crc = 0xFFFF
+    for byte in texto.encode("utf-8"):
+        crc ^= byte << 8
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = ((crc << 1) ^ 0x1021) & 0xFFFF
+            else:
+                crc = (crc << 1) & 0xFFFF
+    return f"{crc:04X}"
+
+
+def gerar_pix(valor):
+    """Gera o "Pix copia e cola" (padrao do Banco Central) com o valor ja preenchido."""
+    conta = campo_pix("00", "br.gov.bcb.pix") + campo_pix("01", PIX_CHAVE)
+    codigo = (campo_pix("00", "01")                 # versao do padrao
+              + campo_pix("26", conta)              # chave Pix
+              + campo_pix("52", "0000")
+              + campo_pix("53", "986")              # moeda: real
+              + campo_pix("54", f"{valor:.2f}")     # valor do pedido
+              + campo_pix("58", "BR")
+              + campo_pix("59", PIX_NOME)
+              + campo_pix("60", PIX_CIDADE)
+              + campo_pix("62", campo_pix("05", "***"))
+              + "6304")                             # o CRC vem logo depois
+    return codigo + crc16_pix(codigo)
+
+
+def qrcode_svg(texto):
+    """Desenha o QR Code do texto e devolve como SVG (vai direto no HTML)."""
+    imagem = qrcode.make(texto, image_factory=qrcode.image.svg.SvgPathImage,
+                         box_size=10, border=2)
+    return imagem.to_string(encoding="unicode")
 
 # --------------------------------------------------------------- IMAGENS
 
@@ -145,6 +195,9 @@ def ler_formulario():
     return {
         "nome": request.form.get("nome", "").strip(),
         "preco": request.form.get("preco", "").strip(),
+        "descricao": request.form.get("descricao", "").strip(),
+        # caixinha marcada = 1 (vai para os Destaques), desmarcada = 0
+        "destaque": 1 if request.form.get("destaque") else 0,
     }
 
 
@@ -175,9 +228,11 @@ def novo():
     imagem = salvar_imagem(arquivo) if arquivo else None
 
     conn.execute(
-        'INSERT INTO doces (nome, preco, imagem) VALUES (?, ?, ?)',
+                        'INSERT INTO doces (nome, preco, descricao, destaque, imagem) VALUES (?, ?, ?, ?, ?)',
         (dados["nome"].title(),
          round(float(dados["preco"].replace(",", ".")), 2),
+         dados["descricao"],
+         dados["destaque"],
          imagem))
     conn.commit()
     conn.close()
@@ -232,9 +287,11 @@ def editar(id_doce):
         imagem = None
 
     conn.execute(
-        'UPDATE doces SET nome = ?, preco = ?, imagem = ? WHERE id = ?',
+                         'UPDATE doces SET nome = ?, preco = ?, descricao = ?, destaque = ?, imagem = ? WHERE id = ?',
         (dados["nome"].title(),
          round(float(dados["preco"].replace(",", ".")), 2),
+         dados["descricao"],
+         dados["destaque"],
          imagem,
          id_doce))
     conn.commit()
@@ -244,6 +301,29 @@ def editar(id_doce):
 
 
 # --------------------------------------------------------------- EXCLUIR
+@app.route("/doce/<int:id_doce>/destaque", methods=["POST"])
+def alternar_destaque(id_doce):
+    """Botao da estrela na lista: coloca ou tira o doce dos Destaques."""
+    conn = conectar_banco()
+    doce = conn.execute('SELECT * FROM doces WHERE id = ?',
+                        (id_doce,)).fetchone()
+
+    if doce is None:
+        conn.close()
+        return render_template("erro.html",
+                               mensagem=f"Nao existe doce com id {id_doce}."), 404
+
+    novo = 0 if doce["destaque"] else 1
+    conn.execute('UPDATE doces SET destaque = ? WHERE id = ?', (novo, id_doce))
+    conn.commit()
+    conn.close()
+
+    if novo:
+        msg = f"{doce['nome']} agora aparece nos Destaques da loja."
+    else:
+        msg = f"{doce['nome']} saiu dos Destaques (continua em Produtos)."
+    return redirect(url_for("listar", msg=msg))
+
 
 @app.route("/doce/<int:id_doce>/excluir", methods=["POST"])
 def excluir(id_doce):
@@ -364,10 +444,11 @@ def montar_carrinho():
                       "subtotal": subtotal, "imagem": doce["imagem"]})
     conn.close()
 
-    linhas = ["Olá! Gostaria de fazer este pedido:"]
+    linhas = ["Olá! Fiz este pedido e já paguei pelo Pix:"]
     for i in itens:
         linhas.append(f"- {i['qtd']}x {i['nome']} (R$ {i['subtotal']:.2f})")
     linhas.append(f"Total: R$ {total:.2f}")
+    linhas.append("Segue o comprovante.")
     link = f"https://wa.me/{WHATSAPP}?text={quote(chr(10).join(linhas))}"
 
     return itens, total, link
@@ -382,7 +463,9 @@ def loja():
     # cada foto vira {"arquivo": caminho dentro de static, "legenda": texto}
     slides = [{"arquivo": "uploads/" + s["imagem"], "legenda": s["legenda"]}
               for s in conn.execute('SELECT * FROM carrossel ORDER BY id')]
-    doces = conn.execute('SELECT * FROM doces ORDER BY nome LIMIT 4').fetchall()
+        # so os doces marcados como destaque (todos continuam na aba Produtos)
+    doces = conn.execute(
+        'SELECT * FROM doces WHERE destaque = 1 ORDER BY nome').fetchall()
     conn.close()
 
     # nenhuma foto cadastrada na aba Carrossel: usa as fotos de static/img
@@ -476,6 +559,19 @@ def loja_carrinho():
                            link_whatsapp=link_whatsapp)
 
 
+@app.route("/loja/pagamento")
+def loja_pagamento():
+    """Pagina do Pix: QR Code e "copia e cola" com o total do carrinho."""
+    itens, total, link_whatsapp = montar_carrinho()
+
+    if not itens:                       # carrinho vazio: nada para pagar
+        return redirect(url_for("loja_carrinho"))
+
+    pix = gerar_pix(total)
+    return render_template("loja_pagamento.html", itens=itens, total=total,
+                           pix=pix, qrcode=qrcode_svg(pix),
+                           link_whatsapp=link_whatsapp)
+
 
 @app.route("/loja/carrinho/adicionar/<int:id_doce>", methods=["POST"])
 def loja_adicionar(id_doce):
@@ -559,6 +655,8 @@ def novo_evento():
     dados = {
         "nome": request.form.get("nome", "").strip(),
         "descricao": request.form.get("descricao", "").strip(),
+        # caixinha marcada = 1 (vai para os Destaques), desmarcada = 0
+        "destaque": 1 if request.form.get("destaque") else 0,
     }
 
     conn = conectar_banco()

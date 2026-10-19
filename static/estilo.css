@@ -238,6 +238,27 @@ td {
 }
 
 tr:hover td { background: rgba(242, 228, 200, 0.45); }
+/* botao da estrela (Destaque) na lista de doces */
+.btn-destaque {
+  background: transparent;
+  color: var(--texto-suave);
+  border: 2px solid var(--borda);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.btn-destaque:hover {
+  background: var(--areia);
+  border-color: var(--ouro);
+  color: var(--cacau);
+}
+.btn-destaque.ativo {
+  background: var(--ouro);
+  border-color: var(--ouro);
+  color: var(--cacau);
+}
+.btn-destaque.ativo:hover { background: var(--ouro-hover); }
 
 /* formularios dentro da tabela ficam na mesma linha */
 td form {
@@ -348,7 +369,17 @@ textarea {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-textarea { max-width: 100%; resize: vertical; }
+/* caixas de texto (descricoes): largura toda, altura minima boa e
+   da para aumentar puxando o canto de baixo */
+textarea {
+  max-width: 100%;
+  min-height: 160px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+/* texto digitado em caixa de texto: mantem as quebras de linha */
+.texto-livre { white-space: pre-line; overflow-wrap: anywhere; }
 
 input[type="text"]:focus,
 input[type="number"]:focus,

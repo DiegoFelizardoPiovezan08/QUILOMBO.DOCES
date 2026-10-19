@@ -22,6 +22,7 @@
         <th>Foto</th>
         <th>Nome</th>
         <th>Preco</th>
+        <th>Destaque</th>
         <th></th>
       </tr>
       {% for p in doces %}
@@ -36,6 +37,16 @@
         </td>
         <td><a href="{{ url_for('detalhe', id_doce=p['id']) }}">{{ p['nome'] }}</a></td>
         <td>{{ p['preco'] }} </td>
+                <td>
+          <!-- estrela: um clique coloca ou tira o doce dos Destaques da loja -->
+          <form method="post" action="{{ url_for('alternar_destaque', id_doce=p['id']) }}">
+            {% if p['destaque'] %}
+              <button type="submit" class="btn-destaque ativo" title="Tirar dos Destaques">&#9733; Em destaque</button>
+            {% else %}
+              <button type="submit" class="btn-destaque" title="Mostrar nos Destaques">&#9734; Destacar</button>
+            {% endif %}
+          </form>
+        </td>
         <td>
           <!-- caso deseje editar/excluir -->
           <a href="{{ url_for('editar', id_doce=p['id']) }}">editar</a>
@@ -43,10 +54,7 @@
                 onsubmit="return confirm('Excluir {{ p['nome'] }}?');">
             <button type="submit" class="link-perigo">excluir</button>
           </form>
-          <!-- caso deseje adicionar no carrinho -->
-            <form action="{{ url_for('adicionar_carrinho', id=p['id']) }}" method="post" style="display:inline">
-                <button type="submit" class="btn-carrinho">Adicionar ao carrinho</button>
-            </form>
+      
         </td>
       </tr>
       {% endfor %}

@@ -15,6 +15,9 @@
     <!-- ID e preco do doce -->
     <li><b>ID:</b> {{ doce['id'] }}</li>
     <li><b>preco:</b> {{ doce['preco'] }} </li>
+    {% if doce['descricao'] %}
+      <li><b>descrição:</b> <span class="texto-livre">{{ doce['descricao'] }}</span></li>
+    {% endif %}
   </ul>
 
   <p>

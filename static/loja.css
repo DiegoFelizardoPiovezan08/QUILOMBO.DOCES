@@ -469,6 +469,14 @@ a { text-decoration: none; }
 .card-corpo form,
 .card-corpo .btn { margin-top: auto; }
 .card-corpo form .btn { width: 100%; }
+/* descricao curta do doce no card */
+.card-descricao {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
 
 .resumo-texto {
   margin: 0;
@@ -755,6 +763,68 @@ a { text-decoration: none; }
   white-space: pre-line;   /* mantem as quebras de linha digitadas */
   overflow-wrap: anywhere; /* palavra enorme sem espaco quebra em vez de estourar */
 }
+/* ---------- pagamento com Pix ---------- */
+
+.pagamento {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.pix {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  background: var(--branco);
+  border-radius: var(--raio-grande);
+  box-shadow: var(--sombra);
+  padding: 28px;
+  text-align: center;
+}
+
+.pix-valor {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--terracota);
+}
+
+.pix-qrcode svg {
+  display: block;
+  width: 260px;
+  height: 260px;
+  background: var(--branco);   /* QR Code precisa de fundo branco para ler bem */
+}
+
+.pix label { font-weight: 700; margin-top: 6px; }
+
+.pix-copia {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 520px;
+}
+.pix-copia input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--cacau);
+  background: var(--areia);
+  border: 2px solid var(--borda);
+  border-radius: var(--raio);
+}
+
+.resumo-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  font-size: 0.95rem;
+}
 
 /* ---------- rodape ---------- */
 
@@ -793,6 +863,9 @@ a { text-decoration: none; }
   .grade-lista .card-corpo { padding: 14px 16px; }
 
   .carrinho { grid-template-columns: 1fr; }
+    .pagamento { grid-template-columns: 1fr; }
+  .pix { padding: 18px; }
+  .pix-qrcode svg { width: 220px; height: 220px; }
   .resumo { position: static; }
 
   .item {

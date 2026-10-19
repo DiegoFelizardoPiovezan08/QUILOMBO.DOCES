@@ -18,7 +18,12 @@
 
     <div class="produto-info">
       <h1>{{ doce['nome'] }}</h1>
-      <p class="preco preco-grande">R$ {{ doce['preco']|brl }}</p>
+            <p class="preco preco-grande">R$ {{ doce['preco']|brl }}</p>
+
+      {% if doce['descricao'] %}
+        <!-- white-space: pre-line no css mantem as quebras de linha da descricao -->
+        <p class="descricao">{{ doce['descricao'] }}</p>
+      {% endif %}
 
       <form method="post" action="{{ url_for('loja_adicionar', id_doce=doce['id']) }}">
         <label for="quantidade">Quantidade</label>

@@ -59,7 +59,16 @@ def conectar_banco():
     for tabela in ("doces", "eventos"):
         colunas = [c["name"] for c in conn.execute(f"PRAGMA table_info({tabela})")]
         if "imagem" not in colunas:
-            conn.execute(f"ALTER TABLE {tabela} ADD COLUMN imagem TEXT")
+                        conn.execute(f"ALTER TABLE {tabela} ADD COLUMN imagem TEXT")
+
+    # coluna "descricao" em doces: so e criada se o banco for antigo
+    colunas = [c["name"] for c in conn.execute("PRAGMA table_info(doces)")]
+    if "descricao" not in colunas:
+        conn.execute("ALTER TABLE doces ADD COLUMN descricao TEXT")
+        
+    # coluna "destaque" em doces: 1 = aparece nos Destaques da pagina inicial
+    if "destaque" not in colunas:
+        conn.execute("ALTER TABLE doces ADD COLUMN destaque INTEGER NOT NULL DEFAULT 0")
     conn.commit()
     return conn
 

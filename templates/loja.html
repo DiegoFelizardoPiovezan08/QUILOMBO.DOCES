@@ -93,7 +93,8 @@
       {% endfor %}
     </div>
   {% else %}
-    <p class="vazio">Ainda não temos doces disponíveis. Volte em breve!</p>
+    <p class="vazio">Em breve, novidades em destaque!</p>
+    <p class="centro"><a class="btn btn-principal" href="{{ url_for('loja_produtos') }}">Ver todos os produtos</a></p>
   {% endif %}
 
 

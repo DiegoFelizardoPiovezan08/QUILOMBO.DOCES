@@ -51,11 +51,11 @@
           <strong>R$ {{ total|brl }}</strong>
         </p>
 
-        <a class="btn btn-whatsapp btn-grande" href="{{ link_whatsapp }}" target="_blank">
-          Finalizar pelo WhatsApp
+               <a class="btn btn-principal btn-grande" href="{{ url_for('loja_pagamento') }}">
+          Pagar com Pix
         </a>
 
-        <p class="dica">Ao clicar, abrimos uma conversa com o seu pedido já escrito.</p>
+        <p class="dica">Geramos um QR Code Pix com o valor do pedido.</p>
 
         <a class="btn btn-contorno" href="{{ url_for('loja_produtos') }}">Continuar comprando</a>
 

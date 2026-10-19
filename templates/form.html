@@ -28,6 +28,22 @@
     </p>
 
     <p>
+      <!-- descricao do doce (opcional): caixa grande, da para aumentar puxando o canto -->
+      <label for="descricao">Descrição</label>
+      <textarea id="descricao" name="descricao" rows="8"
+                placeholder="Ex.: Brigadeiro gourmet feito com chocolate belga, granulado e muito carinho.">{{ dados.get('descricao', '') or '' }}</textarea>
+      <span class="dica">Aparece na loja. As quebras de linha que você digitar são mantidas. Puxe o canto da caixa para aumentar.</span>
+    </p>
+    
+    <p>
+      <!-- destaque: marcado = aparece nos Destaques da pagina inicial da loja -->
+      <label class="check">
+        <input type="checkbox" name="destaque" value="1" {% if dados.get('destaque') %}checked{% endif %}>
+        &#9733; Mostrar nos Destaques da página inicial
+      </label>
+      <span class="dica">Todos os doces aparecem na aba Produtos. Só os marcados aparecem em Destaques.</span>
+    </p>
+    <p>
       <!-- foto do doce (opcional) -->
       <label for="imagem">Foto</label>
       {% if dados.get('imagem') %}
