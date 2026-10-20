@@ -1,0 +1,62 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}Minha conta{% endblock %}
+
+{% block conteudo %}
+
+  <div class="secao-cabecalho">
+    <h2 class="secao-titulo">Minha conta</h2>
+    <form method="post" action="{{ url_for('contas.sair') }}">
+      <button type="submit" class="btn btn-contorno">Sair</button>
+    </form>
+  </div>
+
+  <div class="conta">
+
+    <!-- dados do cadastro -->
+    <section class="cartao conta-dados">
+      <h3>{{ cliente['nome'] }}</h3>
+      <dl>
+        <dt>CPF</dt><dd>{{ cliente['cpf']|cpf }}</dd>
+        <dt>WhatsApp</dt><dd>{{ cliente['telefone'] }}</dd>
+        <dt>Endereço</dt>
+        <dd>
+          {{ cliente['endereco'] }}{% if cliente['numero'] %}, {{ cliente['numero'] }}{% endif %}{% if cliente['complemento'] %}, {{ cliente['complemento'] }}{% endif %}<br>
+          {{ cliente['bairro'] }} &middot; {{ cliente['cidade'] }}<br>
+          CEP {{ cliente['cep'] }}
+        </dd>
+      </dl>
+      <a class="btn btn-contorno" href="{{ url_for('contas.editar') }}">Alterar meus dados</a>
+    </section>
+
+    <!-- historico de pedidos -->
+    <section class="cartao conta-pedidos">
+      <h3>Meus pedidos</h3>
+      {% if pedidos %}
+        {% for p in pedidos %}
+          <a class="pedido-linha" href="{{ url_for('loja_pedido', token=p['token']) }}">
+            <div>
+              <b>Pedido {{ p['id']|numero_pedido }}</b>
+              <small>{{ p['criado_em'] }}</small>
+              <span class="pedido-itens">{{ p['itens'] }}</span>
+            </div>
+            <div class="pedido-lado">
+              <b>R$ {{ p['total']|brl }}</b>
+              {% include "_situacao_pedido.html" %}
+              {% if p['status'] in ('aguardando', 'informado') %}
+                <span class="pedido-acao">Continuar pagamento &rarr;</span>
+              {% else %}
+                <span class="pedido-acao">Ver pedido &rarr;</span>
+              {% endif %}
+            </div>
+          </a>
+        {% endfor %}
+      {% else %}
+        <p class="vazio">Você ainda não fez nenhum pedido.</p>
+        <p class="centro"><a class="btn btn-principal" href="{{ url_for('loja_produtos') }}">Ver nossos doces</a></p>
+      {% endif %}
+    </section>
+
+  </div>
+
+{% endblock %}

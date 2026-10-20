@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}Nossos doces{% endblock %} | Quilombo Doces</title>
-    <!-- fontes do logo: Poppins (textos) e Kaushan Script ("Quilombo") -->
+  <!-- fontes do logo: Poppins (textos) e Kaushan Script ("Quilombo") -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='loja.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='loja.css') }}">
 </head>
 <body>
 
-  <!-- topo: logo e menu (Produtos, Eventos, Carrinho) -->
+  <!-- topo: logo e menu (Produtos, Eventos, Sobre, Conta, Carrinho) -->
   <header class="topo">
     <div class="topo-conteudo">
-            <!-- logo: circulo + "Quilombo" + "DOCES" -->
+      <!-- logo: circulo + "Quilombo" + "DOCES" -->
       <a class="logo" href="{{ url_for('loja') }}">
         <img class="logo-img" src="{{ url_for('static', filename='img/logo.png') }}" alt="">
         <span class="logo-texto">
@@ -30,8 +30,13 @@
            {% if request.endpoint in ('loja_produtos', 'loja_produto') %}class="ativo"{% endif %}>Produtos</a>
         <a href="{{ url_for('loja_eventos') }}"
            {% if request.endpoint in ('loja_eventos', 'loja_evento') %}class="ativo"{% endif %}>Eventos</a>
-                   <a href="{{ url_for('loja_sobre') }}"
+        <a href="{{ url_for('loja_sobre') }}"
            {% if request.endpoint == 'loja_sobre' %}class="ativo"{% endif %}>Sobre</a>
+        <!-- conta do cliente: "Entrar" ou o primeiro nome de quem entrou -->
+        <a href="{{ url_for('contas.minha_conta') }}"
+           {% if request.endpoint and request.endpoint.startswith('contas.') %}class="ativo"{% endif %}>
+          {{ cliente['nome'].split()[0] if cliente else 'Entrar' }}
+        </a>
         <a class="carrinho-link {% if request.endpoint == 'loja_carrinho' %}ativo{% endif %}"
            href="{{ url_for('loja_carrinho') }}">
           Carrinho

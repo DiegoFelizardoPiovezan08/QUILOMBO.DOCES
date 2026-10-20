@@ -1,32 +1,31 @@
 {% extends "base_loja.html" %}
 
-{% block titulo %}Pagamento{% endblock %}
+{% block titulo %}Finalizar pedido{% endblock %}
 
 {% block conteudo %}
 
   <p class="voltar"><a href="{{ url_for('loja_carrinho') }}">&larr; Voltar ao carrinho</a></p>
 
-  <h2 class="secao-titulo">Pagamento com Pix</h2>
+  <h2 class="secao-titulo">Finalizar pedido</h2>
 
   <div class="pagamento">
 
-    <!-- QR Code e "copia e cola" -->
-    <section class="pix">
-      <p class="pix-valor">R$ {{ total|brl }}</p>
+    <!-- dados de entrega vindos da conta do cliente -->
+    <form class="pix dados-cliente" method="post" action="{{ url_for('loja_pagamento') }}">
+      <h3>Entrega para</h3>
+      <dl class="dados-entrega">
+        <dt>Nome</dt><dd>{{ cliente['nome'] }}</dd>
+        <dt>CPF</dt><dd>{{ cliente['cpf']|cpf }}</dd>
+        <dt>WhatsApp</dt><dd>{{ cliente['telefone'] }}</dd>
+        <dt>Endereço</dt><dd>{{ endereco }}</dd>
+      </dl>
+      <a href="{{ url_for('contas.editar', proximo=url_for('loja_pagamento')) }}">Alterar meus dados</a>
 
-      <!-- o QR Code vem pronto do app.py (funcao qrcode_svg) -->
-      <div class="pix-qrcode">{{ qrcode|safe }}</div>
+      <button type="submit" class="btn btn-principal btn-grande">Gerar Pix</button>
+      <p class="dica">O pedido fica salvo na sua conta, em <b>Minha conta</b>.</p>
+    </form>
 
-      <p class="dica">Abra o app do seu banco, escolha <b>Pix &rarr; Pagar com QR Code</b> e aponte a câmera.</p>
-
-      <label for="pix-copia">Ou use o Pix copia e cola:</label>
-      <div class="pix-copia">
-        <input type="text" id="pix-copia" value="{{ pix }}" readonly>
-        <button type="button" class="btn btn-contorno" id="botao-copiar">Copiar</button>
-      </div>
-    </section>
-
-    <!-- resumo e envio do comprovante -->
+    <!-- resumo do pedido -->
     <aside class="resumo">
       <h3>Seu pedido</h3>
       {% for item in itens %}
@@ -39,28 +38,8 @@
         <span>Total</span>
         <strong>R$ {{ total|brl }}</strong>
       </p>
-
-      <a class="btn btn-whatsapp btn-grande" href="{{ link_whatsapp }}" target="_blank">
-        Já paguei, enviar comprovante
-      </a>
-      <p class="dica">Abre o WhatsApp com o seu pedido escrito. É só anexar o comprovante.</p>
     </aside>
 
   </div>
-
-  <script>
-    // botao "Copiar": copia o codigo Pix para colar no app do banco
-    document.getElementById('botao-copiar').onclick = function () {
-      var campo = document.getElementById('pix-copia');
-      var botao = this;
-      campo.select();
-      (navigator.clipboard ? navigator.clipboard.writeText(campo.value)
-                           : Promise.resolve(document.execCommand('copy')))
-        .then(function () {
-          botao.textContent = 'Copiado!';
-          setTimeout(function () { botao.textContent = 'Copiar'; }, 2000);
-        });
-    };
-  </script>
 
 {% endblock %}

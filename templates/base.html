@@ -35,6 +35,8 @@
       <a href="{{ url_for('eventos') }}">Eventos</a>
       <a href="{{ url_for('carrossel') }}">Carrossel</a>
       <a href="{{ url_for('sobre') }}">Sobre</a>
+            <!-- Pedidos: o numero mostra quantos clientes avisaram que pagaram -->
+      <a href="{{ url_for('pedidos') }}">Pedidos{% if pedidos_pendentes %} <span class="contador-pedidos">{{ pedidos_pendentes }}</span>{% endif %}</a>
       <!-- botao que leva para a loja (so existe aqui, na area do administrador) -->
       <a class="botao-loja" href="{{ url_for('loja') }}">Ir para a loja &rarr;</a>
     </nav>

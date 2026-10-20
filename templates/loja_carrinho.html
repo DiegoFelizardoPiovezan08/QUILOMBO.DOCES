@@ -6,6 +6,27 @@
 
   <h2 class="secao-titulo">Meu carrinho</h2>
 
+  
+  <!-- pedidos do cliente que ainda estao no pagamento: volta de onde parou -->
+  {% if pedidos_abertos %}
+    <section class="pedidos-abertos">
+      <h3>Pedidos em andamento</h3>
+      {% for p in pedidos_abertos %}
+        <a class="pedido-linha" href="{{ url_for('loja_pedido', token=p['token']) }}">
+          <div>
+            <b>Pedido {{ p['id']|numero_pedido }}</b>
+            <small>{{ p['criado_em'] }}</small>
+          </div>
+          <div class="pedido-lado">
+            <b>R$ {{ p['total']|brl }}</b>
+            {% include "_situacao_pedido.html" %}
+            <span class="pedido-acao">Continuar pagamento &rarr;</span>
+          </div>
+        </a>
+      {% endfor %}
+    </section>
+  {% endif %}
+
   {% if itens %}
     <div class="carrinho">
 

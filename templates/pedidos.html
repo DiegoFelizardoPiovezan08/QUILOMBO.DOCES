@@ -1,0 +1,68 @@
+<!-- aba pedidos: conferir os Pix recebidos e confirmar os pedidos -->
+{% extends "base.html" %}
+
+{% block titulo %}Pedidos{% endblock %}
+
+{% block conteudo %}
+  <h2>Pedidos</h2>
+
+  {% if msg %}
+    <p class="sucesso">{{ msg }}</p>
+  {% endif %}
+
+
+  <p class="dica">Antes de confirmar, abra o app do banco e veja se caiu um Pix com o <b>valor do pedido</b>
+     (em muitos bancos aparece também o identificador <b>QD</b> + número do pedido).</p>
+
+  {% if pedidos %}
+    <table>
+      <tr>
+        <th>Pedido</th>
+        <th>Cliente</th>
+        <th>Itens</th>
+        <th>Total</th>
+        <th>Situação</th>
+        <th></th>
+      </tr>
+      {% for p in pedidos %}
+        <tr class="{% if p['status'] == 'informado' %}linha-destaque{% endif %}">
+          <td>
+            <b>{{ p['id']|numero_pedido }}</b><br>
+            <small>{{ p['criado_em'] }}</small><br>
+            <small>Pix: QD{{ '%05d'|format(p['id']) }}</small>
+          </td>
+          <td>
+            {{ p['nome'] }}<br>
+            <a href="{{ p['telefone']|link_whatsapp }}" target="_blank">{{ p['telefone'] }}</a>
+            {% if p['cpf'] %}<br><small>CPF {{ p['cpf']|cpf }}</small>{% endif %}
+            {% if p['endereco'] %}<br><small class="endereco-pedido">{{ p['endereco'] }}</small>{% endif %}
+          </td>
+          <td class="texto-livre">{{ p['itens'] }}</td>
+          <td><b>R$ {{ p['total']|brl }}</b></td>
+          <td>
+            {% if p['status'] == 'informado' %}<span class="selo selo-informado">Cliente diz que pagou</span>
+            {% elif p['status'] == 'aguardando' %}<span class="selo selo-aguardando">Aguardando Pix</span>
+            {% elif p['status'] == 'pago' %}<span class="selo selo-pago">Pago</span>
+            {% else %}<span class="selo selo-cancelado">Cancelado</span>{% endif %}
+          </td>
+          <td>
+            {% if p['status'] in ('aguardando', 'informado') %}
+              <form method="post" action="{{ url_for('mudar_pedido', id_pedido=p['id'], acao='confirmar') }}"
+                    onsubmit="return confirm('O Pix de R$ {{ p['total']|brl }} caiu na conta?');">
+                <button type="submit" class="botao-confirmar">Confirmar pagamento</button>
+              </form>
+              <form method="post" action="{{ url_for('mudar_pedido', id_pedido=p['id'], acao='cancelar') }}"
+                    onsubmit="return confirm('Cancelar este pedido?');">
+                <button type="submit" class="link-perigo">Cancelar</button>
+                      </form>
+            {% elif p['status'] == 'pago' %}
+              <a class="link-whatsapp" href="{{ p|aviso_pagamento }}" target="_blank">Avisar cliente no WhatsApp</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p class="vazio">Nenhum pedido ainda.</p>
+  {% endif %}
+{% endblock %}

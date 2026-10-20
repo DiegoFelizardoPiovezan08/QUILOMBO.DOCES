@@ -260,6 +260,51 @@ tr:hover td { background: rgba(242, 228, 200, 0.45); }
 }
 .btn-destaque.ativo:hover { background: var(--ouro-hover); }
 
+/* ---------- aba Pedidos ---------- */
+
+/* numero de pedidos esperando conferencia, no menu */
+.contador-pedidos {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 6px;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: var(--ouro);
+  color: var(--cacau);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* pedido em que o cliente avisou que pagou: linha em destaque */
+.linha-destaque td { background: #fff4e0; }
+
+/* etiquetas de situacao */
+.selo {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.selo-informado { background: var(--ouro); color: var(--cacau); }
+.selo-aguardando { background: var(--areia); color: var(--texto-suave); }
+.selo-pago { background: var(--sucesso-bg); color: var(--sucesso-txt); }
+.selo-cancelado { background: var(--erro-bg); color: var(--perigo); }
+
+/* endereco de entrega do pedido */
+.endereco-pedido { display: block; max-width: 220px; color: var(--texto-suave); }
+
+/* botao verde "Confirmar pagamento" */
+.botao-confirmar {
+  background: var(--sucesso-txt);
+  color: var(--branco);
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+.botao-confirmar:hover { background: #154d2a; }
+
+
 /* formularios dentro da tabela ficam na mesma linha */
 td form {
   display: inline-block;
@@ -331,6 +376,10 @@ button:hover { background: var(--cacau-2); }
 }
 .perigo:hover { background: #a02a1f; }
 
+
+
+/* "Avisar cliente no WhatsApp" na linha do pedido pago */
+.link-whatsapp { color: var(--verde-hover); font-weight: 600; font-size: 0.9rem; }
 /* excluir (link pequeno na lista) */
 .link-perigo {
   background: none;

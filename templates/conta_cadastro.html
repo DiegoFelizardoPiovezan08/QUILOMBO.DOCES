@@ -1,0 +1,152 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}{{ titulo }}{% endblock %}
+
+{% block conteudo %}
+
+  {% if editando %}
+    <p class="voltar"><a href="{{ url_for('contas.minha_conta') }}">&larr; Voltar para minha conta</a></p>
+  {% endif %}
+
+  <h2 class="secao-titulo">{{ titulo }}</h2>
+
+  <!-- mesmo formulario para criar conta e para alterar os dados -->
+  <form class="cartao formulario formulario-largo" method="post"
+        action="{{ url_for('contas.editar') if editando else url_for('contas.cadastro') }}">
+    <input type="hidden" name="proximo" value="{{ proximo }}">
+
+    {% if erros %}<p class="erro-caixa">Corrija os campos indicados abaixo.</p>{% endif %}
+
+    <p class="dica"><span class="obrigatorio">*</span> Campos obrigatórios</p>
+
+    <h3>Seus dados</h3>
+    <div class="campos">
+      <div class="campo campo-inteiro">
+        <label for="nome">Nome completo <span class="obrigatorio">*</span></label>
+        <input type="text" id="nome" name="nome" value="{{ dados.get('nome', '') }}"
+               autocomplete="name" required>
+        {% if erros.get('nome') %}<span class="erro">{{ erros['nome'] }}</span>{% endif %}
+      </div>
+      <div class="campo">
+        <label for="cpf">CPF <span class="obrigatorio">*</span></label>
+        <input type="text" id="cpf" name="cpf" value="{{ dados.get('cpf', '')|cpf }}"
+               inputmode="numeric" placeholder="000.000.000-00" required>
+        {% if erros.get('cpf') %}<span class="erro">{{ erros['cpf'] }}</span>{% endif %}
+      </div>
+      <div class="campo">
+        <label for="telefone">WhatsApp (com DDD) <span class="obrigatorio">*</span></label>
+        <input type="tel" id="telefone" name="telefone" value="{{ dados.get('telefone', '') }}"
+               placeholder="11 99999-9999" autocomplete="tel" required>
+        {% if erros.get('telefone') %}<span class="erro">{{ erros['telefone'] }}</span>{% endif %}
+      </div>
+    </div>
+
+    <h3>Endereço de entrega</h3>
+    <div class="campos">
+      <div class="campo">
+        <label for="cep">CEP <span class="obrigatorio">*</span></label>
+        <input type="text" id="cep" name="cep" value="{{ dados.get('cep', '') }}"
+               inputmode="numeric" placeholder="00000-000" autocomplete="postal-code"
+               maxlength="9" required>
+        <!-- mensagem da busca do CEP ("Buscando...", "CEP nao encontrado") -->
+        <span class="dica" id="cep-status">Digite o CEP para preencher rua, bairro e cidade.</span>
+        {% if erros.get('cep') %}<span class="erro">{{ erros['cep'] }}</span>{% endif %}
+      </div>
+      <div class="campo campo-inteiro">
+        <label for="endereco">Rua <span class="obrigatorio">*</span></label>
+        <input type="text" id="endereco" name="endereco" value="{{ dados.get('endereco', '') }}"
+               placeholder="Ex.: Rua das Flores" autocomplete="address-line1" required>
+        {% if erros.get('endereco') %}<span class="erro">{{ erros['endereco'] }}</span>{% endif %}
+      </div>
+      <div class="campo">
+        <label for="numero">Número <span class="obrigatorio">*</span></label>
+        <input type="text" id="numero" name="numero" value="{{ dados.get('numero', '') or '' }}"
+               placeholder="Ex.: 123 (ou S/N)" required>
+        {% if erros.get('numero') %}<span class="erro">{{ erros['numero'] }}</span>{% endif %}
+      </div>
+      <div class="campo">
+        <label for="complemento">Complemento (opcional)</label>
+        <input type="text" id="complemento" name="complemento" value="{{ dados.get('complemento', '') or '' }}"
+               placeholder="Apto, bloco, casa..." autocomplete="address-line2">
+      </div>
+      <div class="campo">
+        <label for="bairro">Bairro <span class="obrigatorio">*</span></label>
+        <input type="text" id="bairro" name="bairro" value="{{ dados.get('bairro', '') }}" required>
+        {% if erros.get('bairro') %}<span class="erro">{{ erros['bairro'] }}</span>{% endif %}
+      </div>
+      <div class="campo">
+        <label for="cidade">Cidade <span class="obrigatorio">*</span></label>
+        <input type="text" id="cidade" name="cidade" value="{{ dados.get('cidade', '') }}"
+               autocomplete="address-level2" required>
+        {% if erros.get('cidade') %}<span class="erro">{{ erros['cidade'] }}</span>{% endif %}
+      </div>
+    </div>
+
+    <h3>{{ 'Trocar a senha (opcional)' if editando else 'Senha' }}</h3>
+    <div class="campos">
+      <div class="campo">
+        <label for="senha">
+          {{ 'Nova senha' if editando else 'Senha' }}
+          {% if not editando %}<span class="obrigatorio">*</span>{% endif %}
+        </label>
+        <input type="password" id="senha" name="senha" autocomplete="new-password"
+               {% if not editando %}required{% endif %}>
+        {% if erros.get('senha') %}<span class="erro">{{ erros['senha'] }}</span>{% endif %}
+      </div>
+      <div class="campo">
+        <label for="confirmar">
+          Repita a senha
+          {% if not editando %}<span class="obrigatorio">*</span>{% endif %}
+        </label>
+        <input type="password" id="confirmar" name="confirmar" autocomplete="new-password"
+               {% if not editando %}required{% endif %}>
+      </div>
+    </div>
+    <p class="dica">{{ 'Deixe em branco para manter a senha atual.' if editando else 'Pelo menos 6 caracteres. Você vai entrar com o CPF e esta senha.' }}</p>
+
+    <button type="submit" class="btn btn-principal btn-grande">{{ 'Salvar' if editando else 'Criar conta' }}</button>
+
+    {% if not editando %}
+      <p class="dica">Já tem conta? <a href="{{ url_for('contas.entrar', proximo=proximo) }}">Entrar</a></p>
+    {% endif %}
+  </form>
+
+  <!-- busca o endereco pelo CEP no ViaCEP (servico gratuito dos Correios)
+       e preenche rua, bairro e cidade sozinho -->
+  <script>
+    const campoCep = document.getElementById("cep");
+    const statusCep = document.getElementById("cep-status");
+    let ultimoCep = "";
+
+    campoCep.addEventListener("input", async () => {
+      // deixa so os numeros e coloca o traco: 01001000 -> 01001-000
+      let cep = campoCep.value.replace(/\D/g, "").slice(0, 8);
+      campoCep.value = cep.length > 5 ? cep.slice(0, 5) + "-" + cep.slice(5) : cep;
+
+      if (cep.length !== 8 || cep === ultimoCep) return;
+      ultimoCep = cep;
+      statusCep.textContent = "Buscando endereço...";
+
+      try {
+        const resposta = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const dados = await resposta.json();
+
+        if (dados.erro) {
+          statusCep.textContent = "CEP não encontrado. Preencha o endereço à mão.";
+          return;
+        }
+
+        if (dados.logradouro) document.getElementById("endereco").value = dados.logradouro;
+        if (dados.bairro) document.getElementById("bairro").value = dados.bairro;
+        document.getElementById("cidade").value = `${dados.localidade} - ${dados.uf}`;
+        statusCep.textContent = "Endereço encontrado! Agora coloque o número.";
+
+        // leva o cursor para o campo do numero
+        document.getElementById("numero").focus();
+      } catch (e) {
+        statusCep.textContent = "Não deu para buscar o CEP agora. Preencha o endereço à mão.";
+      }
+    });
+  </script>
+
+{% endblock %}

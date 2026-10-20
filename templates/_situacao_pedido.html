@@ -1,0 +1,5 @@
+{# etiqueta com a situacao do pedido (usada com include, com a variavel "p") #}
+{% if p['status'] == 'aguardando' %}<span class="selo selo-aguardando">Aguardando Pix</span>
+{% elif p['status'] == 'informado' %}<span class="selo selo-informado">Conferindo pagamento</span>
+{% elif p['status'] == 'pago' %}<span class="selo selo-pago">Pago</span>
+{% else %}<span class="selo selo-cancelado">Cancelado</span>{% endif %}

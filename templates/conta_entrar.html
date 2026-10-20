@@ -1,0 +1,38 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}Entrar{% endblock %}
+
+{% block conteudo %}
+
+  <h2 class="secao-titulo">Minha conta</h2>
+
+  <div class="conta-entrar">
+
+    <!-- login com CPF e senha -->
+    <form class="cartao formulario" method="post" action="{{ url_for('contas.entrar') }}">
+      <h3>Já tenho conta</h3>
+      <input type="hidden" name="proximo" value="{{ proximo }}">
+
+      {% if erro %}<p class="erro-caixa">{{ erro }}</p>{% endif %}
+
+      <label for="cpf">CPF</label>
+      <input type="text" id="cpf" name="cpf" value="{{ cpf or '' }}" inputmode="numeric"
+             placeholder="000.000.000-00" autocomplete="username">
+
+      <label for="senha">Senha</label>
+      <input type="password" id="senha" name="senha" autocomplete="current-password">
+
+      <button type="submit" class="btn btn-principal btn-grande">Entrar</button>
+    </form>
+
+    <!-- quem ainda nao tem conta -->
+    <div class="cartao conta-nova">
+      <h3>Primeira vez aqui?</h3>
+      <p>Crie sua conta para fazer pedidos, pagar com Pix e acompanhar o
+         histórico das suas compras.</p>
+      <a class="btn btn-contorno btn-grande" href="{{ url_for('contas.cadastro', proximo=proximo) }}">Criar conta</a>
+    </div>
+
+  </div>
+
+{% endblock %}

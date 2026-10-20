@@ -4,6 +4,7 @@
 
 import os
 import uuid
+from datetime import datetime
 
 import qrcode
 import qrcode.image.svg
@@ -11,10 +12,12 @@ import qrcode.image.svg
 from flask import (Flask, request, render_template, redirect, url_for,
                    session, flash)
 from cadastro_sqlite import conectar_banco, validar_preco
+from contas import contas, cliente_atual, endereco_completo
 from urllib.parse import quote
 
 
 app = Flask(__name__)
+app.register_blueprint(contas)      # paginas de conta do cliente (contas.py)
 
 
 app.secret_key = "Neymar"
@@ -45,8 +48,12 @@ def crc16_pix(texto):
     return f"{crc:04X}"
 
 
-def gerar_pix(valor):
-    """Gera o "Pix copia e cola" (padrao do Banco Central) com o valor ja preenchido."""
+def gerar_pix(valor, identificador="***"):
+    """Gera o "Pix copia e cola" (padrao do Banco Central) com o valor ja preenchido.
+
+    identificador: codigo do pedido (ate 25 letras/numeros). Aparece no
+    comprovante e, em muitos bancos, no extrato de quem recebe.
+    """
     conta = campo_pix("00", "br.gov.bcb.pix") + campo_pix("01", PIX_CHAVE)
     codigo = (campo_pix("00", "01")                 # versao do padrao
               + campo_pix("26", conta)              # chave Pix
@@ -56,7 +63,7 @@ def gerar_pix(valor):
               + campo_pix("58", "BR")
               + campo_pix("59", PIX_NOME)
               + campo_pix("60", PIX_CIDADE)
-              + campo_pix("62", campo_pix("05", "***"))
+              + campo_pix("62", campo_pix("05", identificador))
               + "6304")                             # o CRC vem logo depois
     return codigo + crc16_pix(codigo)
 
@@ -417,7 +424,7 @@ def formato_brl(valor):
     return f"{float(valor):.2f}".replace(".", ",")
 
 
-@app.context_processor
+
 def dados_globais():
     """Variaveis disponiveis em TODOS os templates."""
     return {
@@ -425,6 +432,61 @@ def dados_globais():
         "whatsapp": WHATSAPP,
     }
 
+@app.context_processor
+def dados_globais():
+    """Variaveis disponiveis em TODOS os templates."""
+    return {
+        "qtd_carrinho": sum(session.get("carrinho", {}).values()),
+        "whatsapp": WHATSAPP,
+        "pedidos_pendentes": contar_pedidos_pendentes(),
+        "cliente": cliente_atual(),      # cliente logado na loja (ou None)
+    }
+
+
+def contar_pedidos_pendentes():
+    """Quantos clientes avisaram que pagaram e esperam a conferencia (aba Pedidos)."""
+    conn = conectar_banco()
+    qtd = conn.execute(
+        "SELECT COUNT(*) FROM pedidos WHERE status = 'informado'").fetchone()[0]
+    conn.close()
+    return qtd
+
+
+@app.template_filter("link_whatsapp")
+def link_whatsapp_cliente(telefone):
+    """Link para chamar o cliente no WhatsApp (aceita "11 99999-9999", "(11)..." etc.)."""
+    digitos = "".join(c for c in telefone if c.isdigit())
+    if len(digitos) <= 11:              # sem o 55 do Brasil na frente
+        digitos = "55" + digitos
+    return f"https://wa.me/{digitos}"
+
+
+@app.template_filter("numero_pedido")
+def numero_pedido(id_pedido):
+    """Mostra o id 7 como #0007."""
+    return f"#{id_pedido:04d}"
+
+
+def link_whatsapp_pedido(pedido):
+    """Link do WhatsApp da loja com o pedido JA CONFIRMADO escrito."""
+    texto = (f"Olá! Meu pedido {numero_pedido(pedido['id'])} teve o pagamento "
+             f"confirmado:\n{pedido['itens']}\nTotal: R$ {formato_brl(pedido['total'])}")
+    return f"https://wa.me/{WHATSAPP}?text={quote(texto)}"
+
+@app.template_filter("aviso_pagamento")
+def link_aviso_pagamento(pedido):
+    """Link que abre o WhatsApp da loja ja com a mensagem para o CLIENTE
+    dizendo que o pagamento foi confirmado (o administrador so aperta enviar)."""
+    nome = pedido["nome"].split()[0] if pedido["nome"] else ""
+    endereco_pedido = url_for("loja_pedido", token=pedido["token"], _external=True)
+    texto = (f"Olá, {nome}! Aqui é da Quilombo Doces.\n\n"
+             f"Recebemos o seu Pix e o pagamento do pedido "
+             f"{numero_pedido(pedido['id'])} foi CONFIRMADO! ✅\n\n"
+             f"{pedido['itens']}\n"
+             f"Total: R$ {formato_brl(pedido['total'])}\n\n"
+             f"Já estamos preparando tudo com carinho. "
+             f"Acompanhe o seu pedido aqui: {endereco_pedido}")
+    return f"{link_whatsapp_cliente(pedido['telefone'])}?text={quote(texto)}"
 
 def montar_carrinho():
     """Le o carrinho da sessao e devolve (itens, total, link_whatsapp)."""
@@ -555,23 +617,98 @@ def loja_sobre():
 @app.route("/loja/carrinho")
 def loja_carrinho():
     itens, total, link_whatsapp = montar_carrinho()
+
+    # cliente logado: mostra tambem os pedidos que ainda estao no pagamento,
+    # para ele voltar de onde parou mesmo depois de sair ou atualizar a pagina
+    pedidos_abertos = []
+    cliente = cliente_atual()
+    if cliente:
+        conn = conectar_banco()
+        pedidos_abertos = conn.execute(
+            "SELECT * FROM pedidos WHERE cliente_id = ? "
+            "AND status IN ('aguardando', 'informado') ORDER BY id DESC",
+            (cliente["id"],)).fetchall()
+        conn.close()
+
     return render_template("loja_carrinho.html", itens=itens, total=total,
-                           link_whatsapp=link_whatsapp)
+                           link_whatsapp=link_whatsapp,
+                           pedidos_abertos=pedidos_abertos)
 
 
-@app.route("/loja/pagamento")
+# ----------------------------------------------------------- PEDIDOS (PIX)
+# 1. /loja/pagamento: o cliente entra na conta (ou cria) e confirma os dados
+# 2. /loja/pedido/<token>: QR Code do Pix com o numero do pedido
+# 3. o cliente clica em "Ja fiz o Pix" -> status "informado"
+# 4. o administrador confere no banco e clica em "Confirmar pagamento"
+# 5. so entao a pagina do cliente mostra "Pagamento confirmado"
+# Os pedidos ficam na conta do cliente ("Minha conta" e Carrinho).
+
+@app.route("/loja/pagamento", methods=["GET", "POST"])
 def loja_pagamento():
-    """Pagina do Pix: QR Code e "copia e cola" com o total do carrinho."""
-    itens, total, link_whatsapp = montar_carrinho()
+    """GET mostra os dados de entrega; POST cria o pedido e esvazia o carrinho."""
+    itens, total, _ = montar_carrinho()
 
     if not itens:                       # carrinho vazio: nada para pagar
         return redirect(url_for("loja_carrinho"))
 
-    pix = gerar_pix(total)
-    return render_template("loja_pagamento.html", itens=itens, total=total,
-                           pix=pix, qrcode=qrcode_svg(pix),
-                           link_whatsapp=link_whatsapp)
+    cliente = cliente_atual()
+    if cliente is None:                 # precisa entrar; depois volta para ca
+        flash("Entre na sua conta (ou crie uma) para finalizar o pedido.")
+        return redirect(url_for("contas.entrar", proximo=url_for("loja_pagamento")))
 
+    if request.method == "GET":
+        return render_template("loja_pagamento.html", itens=itens, total=total,
+                               endereco=endereco_completo(cliente))
+
+    # os itens ficam guardados como texto: o pedido nao muda se o preco mudar depois
+    texto_itens = "\n".join(f"{i['qtd']}x {i['nome']} (R$ {formato_brl(i['subtotal'])})"
+                             for i in itens)
+    token = uuid.uuid4().hex[:12]       # endereco secreto da pagina do pedido
+
+    conn = conectar_banco()
+    conn.execute(
+        'INSERT INTO pedidos (token, nome, telefone, itens, total, criado_em, '
+        'cliente_id, cpf, endereco) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        (token, cliente["nome"], cliente["telefone"], texto_itens, round(total, 2),
+         datetime.now().strftime("%d/%m/%Y %H:%M"),
+         cliente["id"], cliente["cpf"], endereco_completo(cliente)))
+    conn.commit()
+    conn.close()
+
+    session.pop("carrinho", None)       # o carrinho virou pedido
+    return redirect(url_for("loja_pedido", token=token))
+
+
+@app.route("/loja/pedido/<token>")
+def loja_pedido(token):
+    """Pagina do pedido: Pix enquanto nao paga; depois mostra a confirmacao."""
+    conn = conectar_banco()
+    pedido = conn.execute('SELECT * FROM pedidos WHERE token = ?',
+                          (token,)).fetchone()
+    conn.close()
+
+    if pedido is None:
+        return render_template("erro.html",
+                               mensagem="Pedido nao encontrado."), 404
+
+    pix = qr = None
+    if pedido["status"] in ("aguardando", "informado"):
+        pix = gerar_pix(pedido["total"], f"QD{pedido['id']:05d}")
+        qr = qrcode_svg(pix)
+
+    return render_template("loja_pedido.html", pedido=pedido, pix=pix, qrcode=qr,
+                           link_whatsapp=link_whatsapp_pedido(pedido))
+
+
+@app.route("/loja/pedido/<token>/paguei", methods=["POST"])
+def loja_pedido_paguei(token):
+    """Botao "Ja fiz o Pix": avisa o administrador para conferir."""
+    conn = conectar_banco()
+    conn.execute("UPDATE pedidos SET status = 'informado' "
+                 "WHERE token = ? AND status = 'aguardando'", (token,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("loja_pedido", token=token))
 
 @app.route("/loja/carrinho/adicionar/<int:id_doce>", methods=["POST"])
 def loja_adicionar(id_doce):
@@ -598,6 +735,8 @@ def loja_adicionar(id_doce):
 
     flash(f"{doce['nome']} adicionado ao carrinho!")
     return redirect(request.referrer or url_for("loja"))
+
+
 
 
 @app.route("/loja/carrinho/atualizar/<int:id_doce>", methods=["POST"])
@@ -816,6 +955,40 @@ def sobre():
     conn.close()
 
     return redirect(url_for("sobre", msg="Página Sobre salva com sucesso!"))
+
+# ----------------------------------------------------------- PEDIDOS (ADMIN)
+
+@app.route("/pedidos")
+def pedidos():
+    """Aba Pedidos: primeiro os que esperam conferencia, depois os mais novos."""
+    conn = conectar_banco()
+    lista = conn.execute(
+        "SELECT * FROM pedidos ORDER BY "
+        "CASE status WHEN 'informado' THEN 0 WHEN 'aguardando' THEN 1 ELSE 2 END, "
+                "id DESC").fetchall()
+    conn.close()
+
+    return render_template("pedidos.html", pedidos=lista,
+                           msg=request.args.get("msg", ""))
+@app.route("/pedido/<int:id_pedido>/<acao>", methods=["POST"])
+def mudar_pedido(id_pedido, acao):
+    """Botoes "Confirmar pagamento" e "Cancelar" da aba Pedidos."""
+    novo_status = {"confirmar": "pago", "cancelar": "cancelado"}.get(acao)
+    if novo_status is None:
+        return render_template("erro.html", mensagem="Acao invalida."), 404
+
+    conn = conectar_banco()
+    conn.execute('UPDATE pedidos SET status = ? WHERE id = ?',
+                 (novo_status, id_pedido))
+    conn.commit()
+    conn.close()
+
+    if novo_status == "pago":
+        msg = f"Pagamento do pedido {numero_pedido(id_pedido)} confirmado."
+    else:
+        msg = f"Pedido {numero_pedido(id_pedido)} cancelado."
+    return redirect(url_for("pedidos", msg=msg))
+
 
 
 

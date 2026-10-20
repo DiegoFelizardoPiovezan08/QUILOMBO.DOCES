@@ -1,0 +1,103 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}Pedido {{ pedido['id']|numero_pedido }}{% endblock %}
+
+{% block conteudo %}
+
+  <h2 class="secao-titulo">Pedido {{ pedido['id']|numero_pedido }}</h2>
+
+  <!-- etapas do pedido: a atual fica destacada -->
+  {% set etapa = {'aguardando': 1, 'informado': 2, 'pago': 3}.get(pedido['status'], 0) %}
+  {% if pedido['status'] != 'cancelado' %}
+    <ol class="etapas">
+      <li class="{% if etapa >= 1 %}feita{% endif %}">Pix gerado</li>
+      <li class="{% if etapa >= 2 %}feita{% endif %}">Conferindo pagamento</li>
+      <li class="{% if etapa >= 3 %}feita{% endif %}">Pagamento confirmado</li>
+    </ol>
+  {% endif %}
+
+  <div class="pagamento">
+
+    <section class="pix">
+      {% if pedido['status'] == 'aguardando' %}
+        <!-- 1) ainda nao pagou: mostra o Pix -->
+        <p class="pix-valor">R$ {{ pedido['total']|brl }}</p>
+        <div class="pix-qrcode">{{ qrcode|safe }}</div>
+        <p class="dica">Abra o app do seu banco, escolha <b>Pix &rarr; Pagar com QR Code</b> e aponte a câmera.</p>
+
+        <label for="pix-copia">Ou use o Pix copia e cola:</label>
+        <div class="pix-copia">
+          <input type="text" id="pix-copia" value="{{ pix }}" readonly>
+          <button type="button" class="btn btn-contorno" id="botao-copiar">Copiar</button>
+        </div>
+
+        <form method="post" action="{{ url_for('loja_pedido_paguei', token=pedido['token']) }}">
+          <button type="submit" class="btn btn-principal btn-grande">Já fiz o Pix</button>
+        </form>
+        <p class="dica">Depois de pagar, clique aqui. A loja confere o pagamento no banco e confirma o seu pedido.</p>
+
+      {% elif pedido['status'] == 'informado' %}
+        <!-- 2) cliente avisou: esperando o administrador conferir -->
+        <p class="status-icone">&#8987;</p>
+        <h3 class="status-titulo">Estamos conferindo o seu pagamento</h3>
+        <p>Assim que o Pix de <b>R$ {{ pedido['total']|brl }}</b> aparecer na conta da loja,
+           o pedido é confirmado aqui. Esta página atualiza sozinha.</p>
+        <details class="pix-de-novo">
+          <summary>Ainda não pagou? Ver o Pix de novo</summary>
+          <div class="pix-qrcode">{{ qrcode|safe }}</div>
+          <input type="text" value="{{ pix }}" readonly class="pix-copia-simples">
+        </details>
+
+      {% elif pedido['status'] == 'pago' %}
+        <!-- 3) administrador confirmou: pedido valido -->
+        <p class="status-icone">&#9989;</p>
+        <h3 class="status-titulo">Pagamento confirmado!</h3>
+        <p>Obrigado, {{ pedido['nome'] }}! Seu pedido já está com a gente.</p>
+        <a class="btn btn-whatsapp btn-grande" href="{{ link_whatsapp }}" target="_blank">
+          Combinar a entrega pelo WhatsApp
+        </a>
+
+      {% else %}
+        <!-- cancelado -->
+        <p class="status-icone">&#10060;</p>
+        <h3 class="status-titulo">Pedido cancelado</h3>
+        <p>Não identificamos o pagamento deste pedido. Se você pagou, fale com a gente pelo WhatsApp.</p>
+        <a class="btn btn-contorno" href="https://wa.me/{{ whatsapp }}" target="_blank">Falar com a loja</a>
+      {% endif %}
+    </section>
+
+    <aside class="resumo">
+      <h3>Resumo</h3>
+      <p class="resumo-pedido">{{ pedido['itens'] }}</p>
+      <p class="resumo-linha">
+        <span>Total</span>
+        <strong>R$ {{ pedido['total']|brl }}</strong>
+      </p>
+      <p class="dica">Guarde o endereço desta página para acompanhar o pedido.</p>
+    </aside>
+
+  </div>
+
+  <script>
+    // botao "Copiar": copia o codigo Pix para colar no app do banco
+    var botao = document.getElementById('botao-copiar');
+    if (botao) {
+      botao.onclick = function () {
+        var campo = document.getElementById('pix-copia');
+        campo.select();
+        (navigator.clipboard ? navigator.clipboard.writeText(campo.value)
+                             : Promise.resolve(document.execCommand('copy')))
+          .then(function () {
+            botao.textContent = 'Copiado!';
+            setTimeout(function () { botao.textContent = 'Copiar'; }, 2000);
+          });
+      };
+    }
+
+    {% if pedido['status'] == 'informado' %}
+    // conferindo: recarrega a pagina a cada 15 segundos para ver se ja foi confirmado
+    setTimeout(function () { location.reload(); }, 15000);
+    {% endif %}
+  </script>
+
+{% endblock %}

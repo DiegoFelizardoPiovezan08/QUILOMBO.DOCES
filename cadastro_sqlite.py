@@ -45,6 +45,54 @@ def conectar_banco():
             )
         ''')
 
+        # pedidos feitos na loja e pagos por Pix
+    # status: aguardando (Pix gerado) -> informado (cliente disse que pagou)
+    #         -> pago (administrador conferiu no banco) ou cancelado
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS pedidos (
+                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                token     TEXT    NOT NULL,
+                nome      TEXT    NOT NULL,
+                telefone  TEXT    NOT NULL,
+                itens     TEXT    NOT NULL,
+                total     REAL    NOT NULL,
+                status    TEXT    NOT NULL DEFAULT 'aguardando',
+                criado_em TEXT    NOT NULL
+
+            )
+        ''')
+        # clientes da loja (login com CPF + senha); a senha fica guardada
+    # embaralhada (hash), nunca o texto da senha
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS clientes (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome        TEXT    NOT NULL,
+                cpf         TEXT    NOT NULL UNIQUE,
+                telefone    TEXT    NOT NULL,
+                endereco    TEXT    NOT NULL,
+                numero      TEXT,
+                complemento TEXT,
+                bairro      TEXT    NOT NULL,
+                cidade      TEXT    NOT NULL,
+                cep         TEXT    NOT NULL,
+                senha_hash  TEXT    NOT NULL
+            )
+        ''')
+
+
+        # coluna "numero" (numero da casa/predio) em clientes: so e criada se o banco for antigo
+    colunas = [c["name"] for c in conn.execute("PRAGMA table_info(clientes)")]
+    if "numero" not in colunas:
+        conn.execute("ALTER TABLE clientes ADD COLUMN numero TEXT")
+
+
+    # pedidos: de qual cliente e, e o CPF/endereco no momento da compra
+    colunas = [c["name"] for c in conn.execute("PRAGMA table_info(pedidos)")]
+    for coluna in ("cliente_id INTEGER", "cpf TEXT", "endereco TEXT"):
+        if coluna.split()[0] not in colunas:
+            conn.execute(f"ALTER TABLE pedidos ADD COLUMN {coluna}")
+
+
         # blocos da pagina "Sobre" (historia da loja): titulo, texto e foto
     conn.execute('''
             CREATE TABLE IF NOT EXISTS sobre (
