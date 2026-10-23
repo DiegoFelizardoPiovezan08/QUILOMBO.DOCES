@@ -45,6 +45,11 @@
           <div class="item-info">
             <h3>{{ item.nome }}</h3>
             <p class="item-preco">R$ {{ item.preco|brl }} cada</p>
+            {% if item.esgotado %}
+              <p class="item-aviso">Esgotado. Remova do carrinho para continuar.</p>
+            {% elif item.falta %}
+              <p class="item-aviso">Não temos essa quantidade. Diminua para continuar.</p>
+            {% endif %}
           </div>
 
           <!-- botoes de menos e mais -->
@@ -72,9 +77,15 @@
           <strong>R$ {{ total|brl }}</strong>
         </p>
 
-               <a class="btn btn-principal btn-grande" href="{{ url_for('loja_pagamento') }}">
-          Pagar com Pix
-        </a>
+        {% if tem_falta %}
+          <!-- algum doce esgotou depois de entrar no carrinho -->
+          <button type="button" class="btn btn-esgotado btn-grande" disabled>Pagar com Pix</button>
+          <p class="item-aviso">Ajuste os itens marcados para continuar.</p>
+        {% else %}
+          <a class="btn btn-principal btn-grande" href="{{ url_for('loja_pagamento') }}">
+            Pagar com Pix
+          </a>
+        {% endif %}
 
         <p class="dica">Geramos um QR Code Pix com o valor do pedido.</p>
 

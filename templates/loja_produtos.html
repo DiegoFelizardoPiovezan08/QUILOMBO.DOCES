@@ -9,16 +9,38 @@
   <!-- busca pelo nome do doce -->
   <form class="busca" method="get" action="{{ url_for('loja_produtos') }}">
     <input type="search" name="termo" value="{{ termo }}" placeholder="Procurar um doce...">
+    {% if id_categoria %}<input type="hidden" name="categoria" value="{{ id_categoria }}">{% endif %}
     <button type="submit" class="btn btn-principal">Buscar</button>
     {% if termo %}<a class="btn btn-contorno" href="{{ url_for('loja_produtos') }}">Limpar</a>{% endif %}
   </form>
+
+  <!-- botoes das categorias (so aparecem as que tem doces) -->
+  {% if categorias %}
+    <nav class="categorias-filtro">
+      <a href="{{ url_for('loja_produtos') }}" {% if not id_categoria %}class="ativo"{% endif %}>Todos</a>
+      {% for c in categorias %}
+        <a href="{{ url_for('loja_produtos', categoria=c['id']) }}"
+           {% if id_categoria == c['id'] %}class="ativo"{% endif %}>{{ c['nome'] }}</a>
+      {% endfor %}
+    </nav>
+  {% endif %}
 
   {% if termo %}
     <p class="resultado">{{ doces|length }} resultado(s) para "{{ termo }}"</p>
   {% endif %}
 
-  {% if doces %}
-        <!-- "grade-lista": nesta pagina os cards ficam deitados (foto na esquerda, texto na direita) -->
+  {% if grupos %}
+    <!-- "Todos": um bloco para cada categoria -->
+    {% for titulo, lista in grupos %}
+      <h3 class="categoria-titulo">{{ titulo }}</h3>
+      <div class="grade grade-lista">
+        {% for p in lista %}
+          {% include "_card_doce.html" %}
+        {% endfor %}
+      </div>
+    {% endfor %}
+  {% elif doces %}
+    <!-- "grade-lista": nesta pagina os cards ficam deitados (foto na esquerda, texto na direita) -->
     <div class="grade grade-lista">
       {% for p in doces %}
         {% include "_card_doce.html" %}
@@ -26,6 +48,8 @@
     </div>
   {% elif termo %}
     <p class="vazio">Nenhum doce encontrado com "{{ termo }}".</p>
+  {% elif id_categoria %}
+    <p class="vazio">Ainda não temos doces nesta categoria.</p>
   {% else %}
     <p class="vazio">Ainda não temos doces disponíveis. Volte em breve!</p>
   {% endif %}

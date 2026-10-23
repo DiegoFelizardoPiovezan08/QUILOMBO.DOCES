@@ -2,9 +2,10 @@
 # Aplicacao web com Flask — CRUD completo de doces pelo navegador
 # Projeto: Quilombo Doces
 
+import json
 import os
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 import qrcode
 import qrcode.image.svg
@@ -121,8 +122,11 @@ def apagar_imagem(nome):
 def listar():
     """Pagina inicial: todos os doces cadastrados."""
     conn = conectar_banco()
+        # LEFT JOIN: traz junto o nome da categoria (vazio se o doce nao tiver)
     doces = conn.execute(
-        'SELECT * FROM doces ORDER BY nome').fetchall()
+        'SELECT doces.*, categorias.nome AS categoria FROM doces '
+        'LEFT JOIN categorias ON categorias.id = doces.categoria_id '
+        'ORDER BY doces.nome').fetchall()
     conn.close()
 
     #a mensagem de sucesso chega pela URL, apos o redirect
@@ -194,8 +198,19 @@ def validar_formulario(dados, conn, id_atual=None):
     if not validar_preco(dados["preco"]):
         erros["preco"] = "Informe um preco valido, maior que zero (exemplo: 18,50)."
 
-    return erros
 
+    # estoque: numero inteiro, 0 ou mais (0 = esgotado na loja)
+    if not dados["estoque"].isdigit():
+        erros["estoque"] = "Informe a quantidade em estoque (um numero inteiro, 0 ou mais)."
+
+    # categoria: opcional, mas se escolheu tem que existir
+    if dados["categoria_id"]:
+        existe = conn.execute('SELECT id FROM categorias WHERE id = ?',
+                              (dados["categoria_id"],)).fetchone()
+        if existe is None:
+            erros["categoria_id"] = "Escolha uma categoria da lista."
+
+    return erros
 
 def ler_formulario():
     """Le os campos enviados e devolve um dicionario ja limpo."""
@@ -205,8 +220,22 @@ def ler_formulario():
         "descricao": request.form.get("descricao", "").strip(),
         # caixinha marcada = 1 (vai para os Destaques), desmarcada = 0
         "destaque": 1 if request.form.get("destaque") else 0,
+        "estoque": request.form.get("estoque", "").strip(),
+        # id da categoria escolhida ("" = sem categoria)
+        "categoria_id": request.form.get("categoria_id", "").strip(),
     }
 
+
+def categorias_cadastradas():
+    """Todas as categorias, em ordem alfabetica (usada no formulario do doce)."""
+    conn = conectar_banco()
+    categorias = conn.execute('SELECT * FROM categorias ORDER BY nome').fetchall()
+    conn.close()
+    return categorias
+
+
+# deixa o formulario chamar categorias_cadastradas() direto no template
+app.jinja_env.globals["categorias_cadastradas"] = categorias_cadastradas
 
 # --------------------------------------------------------------- CADASTRAR
 
@@ -235,11 +264,14 @@ def novo():
     imagem = salvar_imagem(arquivo) if arquivo else None
 
     conn.execute(
-                        'INSERT INTO doces (nome, preco, descricao, destaque, imagem) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO doces (nome, preco, descricao, destaque, estoque, categoria_id, imagem) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?)',
         (dados["nome"].title(),
          round(float(dados["preco"].replace(",", ".")), 2),
          dados["descricao"],
          dados["destaque"],
+         int(dados["estoque"]),
+         int(dados["categoria_id"]) if dados["categoria_id"] else None,
          imagem))
     conn.commit()
     conn.close()
@@ -294,11 +326,14 @@ def editar(id_doce):
         imagem = None
 
     conn.execute(
-                         'UPDATE doces SET nome = ?, preco = ?, descricao = ?, destaque = ?, imagem = ? WHERE id = ?',
+        'UPDATE doces SET nome = ?, preco = ?, descricao = ?, destaque = ?, '
+        'estoque = ?, categoria_id = ?, imagem = ? WHERE id = ?',
         (dados["nome"].title(),
          round(float(dados["preco"].replace(",", ".")), 2),
          dados["descricao"],
          dados["destaque"],
+         int(dados["estoque"]),
+         int(dados["categoria_id"]) if dados["categoria_id"] else None,
          imagem,
          id_doce))
     conn.commit()
@@ -502,8 +537,11 @@ def montar_carrinho():
         subtotal = doce["preco"] * qtd
         total += subtotal
         itens.append({"id": doce["id"], "nome": doce["nome"],
-                      "preco": doce["preco"], "qtd": qtd,
-                      "subtotal": subtotal, "imagem": doce["imagem"]})
+            "preco": doce["preco"], "qtd": qtd,
+            "subtotal": subtotal, "imagem": doce["imagem"],
+             # esgotou (ou nao tem tudo isso) depois de entrar no carrinho
+            "esgotado": doce["estoque"] <= 0,
+            "falta": qtd > doce["estoque"]})
     conn.close()
 
     linhas = ["Olá! Fiz este pedido e já paguei pelo Pix:"]
@@ -543,19 +581,42 @@ def loja():
 
 @app.route("/loja/produtos")
 def loja_produtos():
-    """Botao "Produtos": todos os doces, ou o resultado de uma busca."""
+    """Botao "Produtos": todos os doces separados por categoria,
+    so os de uma categoria (?categoria=id) ou o resultado de uma busca."""
     termo = request.args.get("termo", "").strip().lower()
+    id_categoria = request.args.get("categoria", type=int)
 
     conn = conectar_banco()
+    # botoes de categoria: so as que ja tem pelo menos um doce
+    categorias = conn.execute(
+        'SELECT * FROM categorias WHERE id IN '
+        '(SELECT categoria_id FROM doces) ORDER BY nome').fetchall()
+
+    filtros, valores = [], []
     if termo:
-        doces = conn.execute(
-            'SELECT * FROM doces WHERE LOWER(nome) LIKE ? ORDER BY nome',
-            (f'%{termo}%',)).fetchall()
-    else:
-        doces = conn.execute('SELECT * FROM doces ORDER BY nome').fetchall()
+        filtros.append('LOWER(nome) LIKE ?')
+        valores.append(f'%{termo}%')
+    if id_categoria:
+        filtros.append('categoria_id = ?')
+        valores.append(id_categoria)
+    where = (' WHERE ' + ' AND '.join(filtros)) if filtros else ''
+    doces = conn.execute(f'SELECT * FROM doces{where} ORDER BY nome',
+                         valores).fetchall()
     conn.close()
 
-    return render_template("loja_produtos.html", doces=doces, termo=termo)
+    # sem busca e sem filtro: um bloco por categoria (e "Outros doces" no fim)
+    grupos = []
+    if not termo and not id_categoria and categorias:
+        for c in categorias:
+            grupos.append((c["nome"], [d for d in doces if d["categoria_id"] == c["id"]]))
+        ids = [c["id"] for c in categorias]
+        sem_categoria = [d for d in doces if d["categoria_id"] not in ids]
+        if sem_categoria:
+            grupos.append(("Outros doces", sem_categoria))
+
+    return render_template("loja_produtos.html", doces=doces, termo=termo,
+                           categorias=categorias, id_categoria=id_categoria,
+                           grupos=grupos)
 
 
 @app.route("/loja/doce/<int:id_doce>")
@@ -575,13 +636,15 @@ def loja_produto(id_doce):
 
 @app.route("/loja/eventos")
 def loja_eventos():
-    """Botao "Eventos": todos os eventos para o consumidor."""
+    """Botao "Eventos": so os que ainda vao acontecer (ou estao acontecendo).
+    No dia seguinte ao ultimo dia, o evento some sozinho da loja."""
     conn = conectar_banco()
-    eventos = conn.execute('SELECT * FROM eventos ORDER BY nome').fetchall()
+    todos = conn.execute(
+        'SELECT * FROM eventos ORDER BY data_inicio IS NULL, data_inicio, nome').fetchall()
     conn.close()
 
+    eventos = [e for e in todos if not evento_encerrado(e)]
     return render_template("loja_eventos.html", eventos=eventos)
-
 
 @app.route("/loja/evento/<int:id_evento>")
 def loja_evento(id_evento):
@@ -632,7 +695,8 @@ def loja_carrinho():
 
     return render_template("loja_carrinho.html", itens=itens, total=total,
                            link_whatsapp=link_whatsapp,
-                           pedidos_abertos=pedidos_abertos)
+                           pedidos_abertos=pedidos_abertos,
+                           tem_falta=any(i["falta"] for i in itens))
 
 
 # ----------------------------------------------------------- PEDIDOS (PIX)
@@ -656,6 +720,13 @@ def loja_pagamento():
         flash("Entre na sua conta (ou crie uma) para finalizar o pedido.")
         return redirect(url_for("contas.entrar", proximo=url_for("loja_pagamento")))
 
+        # algum doce esgotou ou nao tem a quantidade pedida: volta para o carrinho
+    if any(i["falta"] for i in itens):
+        flash("Alguns doces do seu carrinho não estão mais disponíveis "
+              "nessa quantidade. Ajuste o carrinho para continuar.")
+        return redirect(url_for("loja_carrinho"))
+
+
     if request.method == "GET":
         return render_template("loja_pagamento.html", itens=itens, total=total,
                                endereco=endereco_completo(cliente))
@@ -663,15 +734,17 @@ def loja_pagamento():
     # os itens ficam guardados como texto: o pedido nao muda se o preco mudar depois
     texto_itens = "\n".join(f"{i['qtd']}x {i['nome']} (R$ {formato_brl(i['subtotal'])})"
                              for i in itens)
+        # e tambem como {id do doce: quantidade}, para baixar o estoque depois
+    itens_json = json.dumps({str(i["id"]): i["qtd"] for i in itens})
     token = uuid.uuid4().hex[:12]       # endereco secreto da pagina do pedido
 
     conn = conectar_banco()
     conn.execute(
         'INSERT INTO pedidos (token, nome, telefone, itens, total, criado_em, '
-        'cliente_id, cpf, endereco) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'cliente_id, cpf, endereco, itens_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         (token, cliente["nome"], cliente["telefone"], texto_itens, round(total, 2),
          datetime.now().strftime("%d/%m/%Y %H:%M"),
-         cliente["id"], cliente["cpf"], endereco_completo(cliente)))
+         cliente["id"], cliente["cpf"], endereco_completo(cliente), itens_json))
     conn.commit()
     conn.close()
 
@@ -726,11 +799,25 @@ def loja_adicionar(id_doce):
         qtd = int(request.form.get("quantidade", "1"))
     except ValueError:
         qtd = 1
-    qtd = max(1, min(qtd, 99))
+        qtd = max(1, min(qtd, 99))
+
+    if doce["estoque"] <= 0:
+        flash(f"Desculpe, {doce['nome']} está esgotado no momento.")
+        return redirect(request.referrer or url_for("loja"))
 
     carrinho = session.get("carrinho", {})
     chave = str(id_doce)
-    carrinho[chave] = carrinho.get(chave, 0) + qtd
+    novo_total = carrinho.get(chave, 0) + qtd
+
+    # nunca deixa pedir mais do que tem (sem mostrar quanto tem)
+    if novo_total > doce["estoque"]:
+        carrinho[chave] = doce["estoque"]
+        session["carrinho"] = carrinho
+        flash(f"Não temos essa quantidade de {doce['nome']} no momento. "
+              "Colocamos no carrinho o máximo disponível.")
+        return redirect(request.referrer or url_for("loja"))
+
+    carrinho[chave] = novo_total
     session["carrinho"] = carrinho
 
     flash(f"{doce['nome']} adicionado ao carrinho!")
@@ -747,7 +834,14 @@ def loja_atualizar(id_doce):
 
     if chave in carrinho:
         if request.form.get("acao") == "mais":
-            carrinho[chave] = min(carrinho[chave] + 1, 99)
+            conn = conectar_banco()
+            doce = conn.execute('SELECT * FROM doces WHERE id = ?',
+                                (id_doce,)).fetchone()
+            conn.close()
+            if doce and carrinho[chave] < doce["estoque"]:
+                carrinho[chave] = min(carrinho[chave] + 1, 99)
+            elif doce:
+                flash(f"Não temos mais unidades de {doce['nome']} no momento.")
         else:
             carrinho[chave] -= 1
         if carrinho[chave] <= 0:      # chegou a zero: tira do carrinho
@@ -772,17 +866,97 @@ def loja_limpar():
 
 # ----------------------------------------------------------- EVENTOS
 
+MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho",
+         "agosto", "setembro", "outubro", "novembro", "dezembro"]
+
+
+def ultimo_dia(evento):
+    """Ultimo dia do evento (data de termino, ou a de inicio se for um dia so)."""
+    texto = evento["data_fim"] or evento["data_inicio"]
+    return date.fromisoformat(texto) if texto else None
+
+
+def evento_encerrado(evento):
+    """True quando o ultimo dia do evento ja passou (some da loja no dia seguinte)."""
+    fim = ultimo_dia(evento)
+    return fim is not None and fim < date.today()
+
+
+@app.template_filter("datas_evento")
+def datas_evento(evento):
+    """Mostra as datas do evento: "19 a 22 de outubro" ou "25 de outubro"."""
+    if not evento["data_inicio"]:
+        return ""
+    ini = date.fromisoformat(evento["data_inicio"])
+    fim = date.fromisoformat(evento["data_fim"]) if evento["data_fim"] else ini
+    if fim == ini:
+        return f"{ini.day} de {MESES[ini.month - 1]}"
+    if fim.month == ini.month:
+        return f"{ini.day} a {fim.day} de {MESES[fim.month - 1]}"
+    return f"{ini.day} de {MESES[ini.month - 1]} a {fim.day} de {MESES[fim.month - 1]}"
+
+
+app.jinja_env.globals["evento_encerrado"] = evento_encerrado
+
+
+def ler_evento():
+    """Le os campos do formulario de evento e devolve um dicionario limpo."""
+    campos = ("nome", "descricao", "local", "data_inicio", "data_fim", "horario", "taxa")
+    return {c: request.form.get(c, "").strip() for c in campos}
+
+
+def validar_evento(dados):
+    """Devolve {campo: mensagem}; vazio = tudo certo."""
+    erros = {}
+    if len(dados["nome"]) < 2:
+        erros["nome"] = "O nome deve ter pelo menos 2 caracteres."
+    if len(dados["local"]) < 2:
+        erros["local"] = "Informe o local do evento."
+
+    try:
+        inicio = date.fromisoformat(dados["data_inicio"])
+    except ValueError:
+        erros["data_inicio"] = "Escolha a data do evento."
+        inicio = None
+
+    if dados["data_fim"]:
+        try:
+            fim = date.fromisoformat(dados["data_fim"])
+            if inicio and fim < inicio:
+                erros["data_fim"] = "A data de termino deve ser depois da data de inicio."
+        except ValueError:
+            erros["data_fim"] = "Data de termino invalida."
+    return erros
+
+
+def gravar_evento(conn, dados, imagem, id_evento=None):
+    """INSERT (evento novo) ou UPDATE (editar) com todos os campos."""
+    valores = (dados["nome"].title(), dados["descricao"], dados["local"],
+               dados["data_inicio"], dados["data_fim"] or None,
+               dados["horario"], dados["taxa"], imagem)
+    if id_evento is None:
+        conn.execute(
+            'INSERT INTO eventos (nome, descricao, local, data_inicio, data_fim, '
+            'horario, taxa, imagem) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', valores)
+    else:
+        conn.execute(
+            'UPDATE eventos SET nome = ?, descricao = ?, local = ?, data_inicio = ?, '
+            'data_fim = ?, horario = ?, taxa = ?, imagem = ? WHERE id = ?',
+            valores + (id_evento,))
+    conn.commit()
+
+
 @app.route("/eventos")
-def eventos():  
-    """Pagina inicial: todos os eventos cadastrados."""
+def eventos():
+    """Aba Eventos do admin: todos os eventos, os mais proximos primeiro."""
     conn = conectar_banco()
     eventos = conn.execute(
-        'SELECT * FROM eventos ORDER BY nome').fetchall()
+        'SELECT * FROM eventos ORDER BY data_inicio IS NULL, data_inicio, nome').fetchall()
     conn.close()
 
     #a mensagem de sucesso chega pela URL, apos o redirect
     return render_template("eventos.html", eventos=eventos,
-                           msg=request.args.get("msg", "")) 
+                           msg=request.args.get("msg", ""))
 
 @app.route("/novo_evento", methods=["GET", "POST"])
 def novo_evento():
@@ -791,39 +965,25 @@ def novo_evento():
         return render_template("form_evento.html", titulo="Cadastrar evento",
                                dados={}, erros={}, acao=url_for("novo_evento"))
 
-    dados = {
-        "nome": request.form.get("nome", "").strip(),
-        "descricao": request.form.get("descricao", "").strip(),
-        # caixinha marcada = 1 (vai para os Destaques), desmarcada = 0
-        "destaque": 1 if request.form.get("destaque") else 0,
-    }
-
-    conn = conectar_banco()
-    erros = {}
-    if len(dados["nome"]) < 2:
-        erros["nome"] = "O nome deve ter pelo menos 2 caracteres."
+    dados = ler_evento()
+    erros = validar_evento(dados)
     arquivo, erro_imagem = ler_imagem()
     if erro_imagem:
         erros["imagem"] = erro_imagem
 
     if erros:
-        conn.close()
         return render_template("form_evento.html", titulo="Cadastrar evento",
                                dados=dados, erros=erros,
                                acao=url_for("novo_evento")), 400
 
-    imagem = salvar_imagem(arquivo) if arquivo else None
-
-    conn.execute(
-        'INSERT INTO eventos (nome, descricao, imagem) VALUES (?, ?, ?)',
-        (dados["nome"].title(), dados["descricao"], imagem))
-    conn.commit()
+    conn = conectar_banco()
+    gravar_evento(conn, dados, salvar_imagem(arquivo) if arquivo else None)
     conn.close()
 
     return redirect(url_for("eventos", msg="Evento cadastrado com sucesso!"))
 
 @app.route("/evento/<int:id_evento>/editar", methods=["GET", "POST"])
-def editar_evento(id_evento):       
+def editar_evento(id_evento):
     """GET exibe o formulario preenchido; POST grava a alteracao."""
     conn = conectar_banco()
     evento = conn.execute('SELECT * FROM eventos WHERE id = ?',
@@ -836,19 +996,13 @@ def editar_evento(id_evento):
 
     if request.method == "GET":
         conn.close()
-        dados = dict(evento)
         return render_template("form_evento.html", titulo=f"Editar {evento['nome']}",
-                               dados=dados, erros={},
+                               dados=dict(evento), erros={},
                                acao=url_for("editar_evento", id_evento=id_evento))
 
-    dados = {
-        "nome": request.form.get("nome", "").strip(),
-        "descricao": request.form.get("descricao", "").strip(),
-        "imagem": evento["imagem"],
-    }
-    erros = {}
-    if len(dados["nome"]) < 2:
-        erros["nome"] = "O nome deve ter pelo menos 2 caracteres."
+    dados = ler_evento()
+    dados["imagem"] = evento["imagem"]     # para o formulario mostrar a foto atual
+    erros = validar_evento(dados)
     arquivo, erro_imagem = ler_imagem()
     if erro_imagem:
         erros["imagem"] = erro_imagem
@@ -867,13 +1021,11 @@ def editar_evento(id_evento):
         apagar_imagem(imagem)
         imagem = None
 
-    conn.execute(
-        'UPDATE eventos SET nome = ?, descricao = ?, imagem = ? WHERE id = ?',
-        (dados["nome"].title(), dados["descricao"], imagem, id_evento))
-    conn.commit()
+    gravar_evento(conn, dados, imagem, id_evento)
     conn.close()
 
     return redirect(url_for("eventos", msg="Dados do evento atualizados com sucesso!"))
+
 
 @app.route("/evento/<int:id_evento>/excluir", methods=["POST"])
 def excluir_evento(id_evento):
@@ -978,6 +1130,18 @@ def mudar_pedido(id_pedido, acao):
         return render_template("erro.html", mensagem="Acao invalida."), 404
 
     conn = conectar_banco()
+    pedido = conn.execute('SELECT * FROM pedidos WHERE id = ?',
+                          (id_pedido,)).fetchone()
+    if pedido is None:
+        conn.close()
+        return render_template("erro.html", mensagem="Pedido nao encontrado."), 404
+
+    # pagamento confirmado agora (e nao antes): tira os doces do estoque
+    if novo_status == "pago" and pedido["status"] != "pago" and pedido["itens_json"]:
+        for id_doce, qtd in json.loads(pedido["itens_json"]).items():
+            conn.execute('UPDATE doces SET estoque = MAX(estoque - ?, 0) WHERE id = ?',
+                         (qtd, int(id_doce)))
+
     conn.execute('UPDATE pedidos SET status = ? WHERE id = ?',
                  (novo_status, id_pedido))
     conn.commit()
@@ -988,6 +1152,96 @@ def mudar_pedido(id_pedido, acao):
     else:
         msg = f"Pedido {numero_pedido(id_pedido)} cancelado."
     return redirect(url_for("pedidos", msg=msg))
+
+
+# ----------------------------------------------------------- CATEGORIAS (ADMIN)
+
+@app.route("/categorias", methods=["GET", "POST"])
+def categorias():
+    """GET mostra as categorias; POST cria uma categoria nova."""
+    conn = conectar_banco()
+    erro = ""
+    nome = ""
+
+    if request.method == "POST":
+        nome = request.form.get("nome", "").strip()
+        if len(nome) < 2:
+            erro = "O nome da categoria deve ter pelo menos 2 caracteres."
+        elif conn.execute('SELECT id FROM categorias WHERE LOWER(nome) = ?',
+                          (nome.lower(),)).fetchone():
+            erro = "Ja existe uma categoria com esse nome."
+        else:
+            conn.execute('INSERT INTO categorias (nome) VALUES (?)', (nome,))
+            conn.commit()
+            conn.close()
+            return redirect(url_for("categorias",
+                                    msg=f"Categoria {nome} criada!"))
+
+    # quantos doces tem em cada categoria
+    lista = conn.execute(
+        'SELECT categorias.*, COUNT(doces.id) AS qtd FROM categorias '
+        'LEFT JOIN doces ON doces.categoria_id = categorias.id '
+        'GROUP BY categorias.id ORDER BY categorias.nome').fetchall()
+    conn.close()
+
+    return render_template("categorias.html", categorias=lista, erro=erro,
+                           nome=nome, msg=request.args.get("msg", "")), (400 if erro else 200)
+
+
+@app.route("/categoria/<int:id_categoria>/excluir", methods=["POST"])
+def excluir_categoria(id_categoria):
+    """Apaga a categoria; os doces dela continuam, so ficam sem categoria."""
+    conn = conectar_banco()
+    categoria = conn.execute('SELECT * FROM categorias WHERE id = ?',
+                             (id_categoria,)).fetchone()
+    if categoria is None:
+        conn.close()
+        return render_template("erro.html", mensagem="Categoria nao encontrada."), 404
+
+    conn.execute('UPDATE doces SET categoria_id = NULL WHERE categoria_id = ?',
+                 (id_categoria,))
+    conn.execute('DELETE FROM categorias WHERE id = ?', (id_categoria,))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for("categorias",
+                            msg=f"Categoria {categoria['nome']} excluida."))
+
+
+
+# ----------------------------------------------------------- ESTOQUE (ADMIN)
+
+@app.route("/estoque")
+def estoque():
+    """Aba Estoque: quanto tem de cada doce (os esgotados aparecem primeiro)."""
+    conn = conectar_banco()
+    doces = conn.execute('SELECT * FROM doces ORDER BY estoque, nome').fetchall()
+    conn.close()
+
+    return render_template("estoque.html", doces=doces,
+                           msg=request.args.get("msg", ""))
+
+
+@app.route("/estoque/<int:id_doce>", methods=["POST"])
+def mudar_estoque(id_doce):
+    """Botao "Salvar" de cada linha da aba Estoque."""
+    quantidade = request.form.get("estoque", "").strip()
+    if not quantidade.isdigit():
+        return redirect(url_for("estoque", msg="Digite um numero inteiro, 0 ou mais."))
+
+    conn = conectar_banco()
+    doce = conn.execute('SELECT * FROM doces WHERE id = ?', (id_doce,)).fetchone()
+    if doce is None:
+        conn.close()
+        return render_template("erro.html",
+                               mensagem=f"Nao existe doce com id {id_doce}."), 404
+
+    conn.execute('UPDATE doces SET estoque = ? WHERE id = ?', (int(quantidade), id_doce))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for("estoque",
+                            msg=f"Estoque de {doce['nome']} atualizado para {int(quantidade)}."))
 
 
 

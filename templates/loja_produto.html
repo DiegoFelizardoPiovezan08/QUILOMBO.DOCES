@@ -8,7 +8,8 @@
 
   <section class="produto">
     <!-- foto do doce; sem foto, mostra a inicial -->
-    <div class="produto-img">
+    <div class="produto-img {% if doce['estoque'] <= 0 %}esgotado{% endif %}">
+      {% if doce['estoque'] <= 0 %}<span class="selo-esgotado">Esgotado</span>{% endif %}
       {% if doce['imagem'] %}
         <img src="{{ url_for('static', filename='uploads/' ~ doce['imagem']) }}" alt="{{ doce['nome'] }}">
       {% else %}
@@ -18,20 +19,26 @@
 
     <div class="produto-info">
       <h1>{{ doce['nome'] }}</h1>
-            <p class="preco preco-grande">R$ {{ doce['preco']|brl }}</p>
+      <p class="preco preco-grande">R$ {{ doce['preco']|brl }}</p>
 
       {% if doce['descricao'] %}
         <!-- white-space: pre-line no css mantem as quebras de linha da descricao -->
         <p class="descricao">{{ doce['descricao'] }}</p>
       {% endif %}
 
-      <form method="post" action="{{ url_for('loja_adicionar', id_doce=doce['id']) }}">
-        <label for="quantidade">Quantidade</label>
-        <input type="number" id="quantidade" name="quantidade"
-               value="1" min="1" max="99">
+      {% if doce['estoque'] <= 0 %}
+        <!-- acabou: nao deixa comprar (a quantidade nunca aparece na loja) -->
+        <button type="button" class="btn btn-esgotado btn-grande" disabled>Esgotado</button>
+        <p class="dica">Este doce acabou por enquanto. Volte em breve!</p>
+      {% else %}
+        <form method="post" action="{{ url_for('loja_adicionar', id_doce=doce['id']) }}">
+          <label for="quantidade">Quantidade</label>
+          <input type="number" id="quantidade" name="quantidade"
+                 value="1" min="1" max="99">
 
-        <button type="submit" class="btn btn-principal btn-grande">Adicionar ao carrinho</button>
-      </form>
+          <button type="submit" class="btn btn-principal btn-grande">Adicionar ao carrinho</button>
+        </form>
+      {% endif %}
 
       <p class="dica">Você finaliza o pedido pelo WhatsApp, direto com a gente.</p>
     </div>

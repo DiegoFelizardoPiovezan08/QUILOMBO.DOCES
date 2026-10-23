@@ -12,7 +12,11 @@
   {% endif %}
 
   <!-- botao para cadastrar novo doce -->
-  <p><a class="botao" href="{{ url_for('novo') }}">+ Cadastrar novo doce</a></p>
+  <!-- botoes para cadastrar novo doce e criar categoria (um do lado do outro) -->
+  <p class="botoes-topo">
+    <a class="botao" href="{{ url_for('novo') }}">+ Cadastrar novo doce</a>
+    <a class="botao botao-secundario" href="{{ url_for('categorias') }}">+ Nova categoria</a>
+  </p>
 
   <!-- mostra os doces cadastrados no banco de dados -->
   {% if doces %}
@@ -22,6 +26,7 @@
         <th>Foto</th>
         <th>Nome</th>
         <th>Preco</th>
+        <th>Categoria</th>
         <th>Destaque</th>
         <th></th>
       </tr>
@@ -37,6 +42,7 @@
         </td>
         <td><a href="{{ url_for('detalhe', id_doce=p['id']) }}">{{ p['nome'] }}</a></td>
         <td>{{ p['preco'] }} </td>
+        <td>{{ p['categoria'] or '—' }}</td>
                 <td>
           <!-- estrela: um clique coloca ou tira o doce dos Destaques da loja -->
           <form method="post" action="{{ url_for('alternar_destaque', id_doce=p['id']) }}">

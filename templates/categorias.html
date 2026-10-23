@@ -1,0 +1,52 @@
+<!-- aba categorias: criar e excluir as categorias dos doces -->
+{% extends "base.html" %}
+
+{% block titulo %}Categorias{% endblock %}
+
+{% block conteudo %}
+  <h2>Categorias</h2>
+
+  {% if msg %}
+    <p class="sucesso">{{ msg }}</p>
+  {% endif %}
+
+  <p><a href="{{ url_for('listar') }}">&larr; Voltar para os doces</a></p>
+
+  <!-- criar uma categoria nova -->
+  <form class="caixa-envio" method="post" action="{{ url_for('categorias') }}">
+    <p>
+      <label for="nome">Nome da nova categoria</label>
+      <input type="text" id="nome" name="nome" value="{{ nome }}"
+             placeholder="Ex.: Bolos, Brigadeiros, Licores...">
+      {% if erro %}<span class="erro">{{ erro }}</span>{% endif %}
+      <span class="dica">Depois é só escolher a categoria ao cadastrar ou editar um doce.
+        Na loja, a aba Produtos separa os doces por categoria.</span>
+    </p>
+    <button type="submit" class="botao">Criar categoria</button>
+  </form>
+
+  {% if categorias %}
+    <table>
+      <tr>
+        <th>Categoria</th>
+        <th>Doces</th>
+        <th></th>
+      </tr>
+      {% for c in categorias %}
+        <tr>
+          <td><b>{{ c['nome'] }}</b></td>
+          <td>{{ c['qtd'] }} doce(s)</td>
+          <td>
+            <!-- excluir: os doces continuam, so ficam sem categoria -->
+            <form method="post" action="{{ url_for('excluir_categoria', id_categoria=c['id']) }}"
+                  onsubmit="return confirm('Excluir a categoria {{ c['nome'] }}? Os doces dela continuam cadastrados, só ficam sem categoria.');">
+              <button type="submit" class="link-perigo">excluir</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p class="vazio">Nenhuma categoria criada ainda.</p>
+  {% endif %}
+{% endblock %}

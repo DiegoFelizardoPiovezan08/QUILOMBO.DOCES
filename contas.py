@@ -99,6 +99,7 @@ def validar_cadastro(dados, conn, id_atual=None, senha_obrigatoria=True):
 
     if len(so_numeros(dados["telefone"])) < 10:
         erros["telefone"] = "Informe o WhatsApp com DDD (ex.: 11 99999-9999)."
+    if len(dados["endereco"]) < 3:
         erros["endereco"] = "Informe a rua."
     if not dados["numero"]:
         erros["numero"] = "Informe o numero (ou S/N se nao tiver)."

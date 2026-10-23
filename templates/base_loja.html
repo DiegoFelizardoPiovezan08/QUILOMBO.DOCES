@@ -12,10 +12,40 @@
 </head>
 <body>
 
-  <!-- topo: logo e menu (Produtos, Eventos, Sobre, Conta, Carrinho) -->
+  <!-- topo: igual ao do administrador (logo no meio e menu em abas embaixo);
+       na loja, "Entrar" e "Carrinho" ficam no canto de cima -->
   <header class="topo">
-    <div class="topo-conteudo">
-      <!-- logo: circulo + "Quilombo" + "DOCES" -->
+    <!-- ornamentos da apresentacao nos cantos -->
+    <img class="topo-ornamento esquerda" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
+    <img class="topo-ornamento direita" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
+
+    <!-- conta do cliente e carrinho: so os desenhos (o nome aparece ao passar o mouse) -->
+    <div class="topo-conta">
+      <a class="icone-link {% if request.endpoint and request.endpoint.startswith('contas.') %}ativo{% endif %}"
+         href="{{ url_for('contas.minha_conta') }}"
+         aria-label="{{ 'Minha conta (' ~ cliente['nome'].split()[0] ~ ')' if cliente else 'Entrar' }}"
+         title="{{ 'Minha conta (' ~ cliente['nome'].split()[0] ~ ')' if cliente else 'Entrar' }}">
+        <!-- boneco: cabeca + ombros ("preencher" fica cheio ao passar o mouse) -->
+        <svg class="icone" viewBox="0 0 24 24" aria-hidden="true">
+          <circle class="preencher" cx="12" cy="8" r="4"/>
+          <path class="preencher" d="M4 21a8 8 0 0 1 16 0z"/>
+        </svg>
+      </a>
+      <a class="icone-link {% if request.endpoint == 'loja_carrinho' %}ativo{% endif %}"
+         href="{{ url_for('loja_carrinho') }}" aria-label="Carrinho" title="Carrinho">
+        <!-- carrinho: alca + cesta ("preencher" fica cheio ao passar o mouse) + rodas -->
+        <svg class="icone" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M2.5 4H5l1.2 3"/>
+          <path class="preencher" d="M6.2 7H20.5l-2 7.3a1 1 0 0 1-1 .7H8.6a1 1 0 0 1-1-.8z"/>
+          <circle class="roda" cx="9.5" cy="19.5" r="1.6"/>
+          <circle class="roda" cx="17" cy="19.5" r="1.6"/>
+        </svg>
+        {% if qtd_carrinho %}<span class="contador">{{ qtd_carrinho }}</span>{% endif %}
+      </a>
+    </div>
+
+    <!-- logo + "Quilombo Doces", no meio -->
+    <h1 class="topo-logo">
       <a class="logo" href="{{ url_for('loja') }}">
         <img class="logo-img" src="{{ url_for('static', filename='img/logo.png') }}" alt="">
         <span class="logo-texto">
@@ -23,27 +53,17 @@
           <span class="logo-sub">Doces</span>
         </span>
       </a>
+    </h1>
 
-      <!-- a classe "ativo" pinta o botao da pagina em que a pessoa esta -->
-      <nav class="menu">
-        <a href="{{ url_for('loja_produtos') }}"
-           {% if request.endpoint in ('loja_produtos', 'loja_produto') %}class="ativo"{% endif %}>Produtos</a>
-        <a href="{{ url_for('loja_eventos') }}"
-           {% if request.endpoint in ('loja_eventos', 'loja_evento') %}class="ativo"{% endif %}>Eventos</a>
-        <a href="{{ url_for('loja_sobre') }}"
-           {% if request.endpoint == 'loja_sobre' %}class="ativo"{% endif %}>Sobre</a>
-        <!-- conta do cliente: "Entrar" ou o primeiro nome de quem entrou -->
-        <a href="{{ url_for('contas.minha_conta') }}"
-           {% if request.endpoint and request.endpoint.startswith('contas.') %}class="ativo"{% endif %}>
-          {{ cliente['nome'].split()[0] if cliente else 'Entrar' }}
-        </a>
-        <a class="carrinho-link {% if request.endpoint == 'loja_carrinho' %}ativo{% endif %}"
-           href="{{ url_for('loja_carrinho') }}">
-          Carrinho
-          {% if qtd_carrinho %}<span class="contador">{{ qtd_carrinho }}</span>{% endif %}
-        </a>
-      </nav>
-    </div>
+    <!-- menu em abas; a classe "ativo" pinta a aba da pagina em que a pessoa esta -->
+    <nav class="menu">
+      <a href="{{ url_for('loja_produtos') }}"
+         {% if request.endpoint in ('loja_produtos', 'loja_produto') %}class="ativo"{% endif %}>Produtos</a>
+      <a href="{{ url_for('loja_eventos') }}"
+         {% if request.endpoint in ('loja_eventos', 'loja_evento') %}class="ativo"{% endif %}>Eventos</a>
+      <a href="{{ url_for('loja_sobre') }}"
+         {% if request.endpoint == 'loja_sobre' %}class="ativo"{% endif %}>Sobre</a>
+    </nav>
   </header>
 
   <main class="conteudo">
@@ -58,10 +78,18 @@
     {% block conteudo %}{% endblock %}
   </main>
 
+  <!-- rodape: logo, slogan e contatos da apresentacao -->
   <footer class="rodape">
+    <!-- desenhos da apresentacao nos dois cantos do rodape -->
+    <img class="rodape-ornamento esquerda" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
+    <img class="rodape-ornamento direita" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
+    <img class="rodape-logo" src="{{ url_for('static', filename='img/logo-creme.png') }}" alt="">
+    <p class="rodape-slogan">Doces com história.</p>
     <p>Quilombo Doces &mdash; feitos com carinho.</p>
     <p>
       <a href="https://wa.me/{{ whatsapp }}" target="_blank">Fale com a gente no WhatsApp</a>
+      &middot;
+      <a href="https://www.instagram.com/quilombo.doces/" target="_blank">@quilombo.doces</a>
     </p>
   </footer>
 

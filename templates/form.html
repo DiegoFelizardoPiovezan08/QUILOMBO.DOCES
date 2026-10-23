@@ -28,6 +28,32 @@
     </p>
 
     <p>
+      <!-- categoria do doce: as opcoes vem da aba Categorias -->
+      <label for="categoria_id">Categoria</label>
+      <select id="categoria_id" name="categoria_id">
+        <option value="">Sem categoria</option>
+        {% for c in categorias_cadastradas() %}
+          <option value="{{ c['id'] }}"
+            {% if dados.get('categoria_id')|string == c['id']|string %}selected{% endif %}>{{ c['nome'] }}</option>
+        {% endfor %}
+      </select>
+      <span class="dica">Não achou a categoria? <a href="{{ url_for('categorias') }}">Crie uma nova categoria</a>.</span>
+      {% if erros.get('categoria_id') %}<span class="erro">{{ erros['categoria_id'] }}</span>{% endif %}
+    </p>
+
+
+        <p>
+          
+      <!-- estoque: quantas unidades tem; 0 = aparece "Esgotado" na loja -->
+      <label for="estoque">Estoque (unidades)</label>
+      <input type="number" id="estoque" name="estoque" min="0" step="1"
+             value="{{ dados.get('estoque', '') }}" placeholder="Ex.: 20">
+      <span class="dica">A quantidade não aparece na loja. Com 0, o doce aparece como "Esgotado".
+        O estoque baixa sozinho quando você confirma o pagamento de um pedido.</span>
+      {% if erros.get('estoque') %}<span class="erro">{{ erros['estoque'] }}</span>{% endif %}
+    </p>
+
+    <p>
       <!-- descricao do doce (opcional): caixa grande, da para aumentar puxando o canto -->
       <label for="descricao">Descrição</label>
       <textarea id="descricao" name="descricao" rows="8"

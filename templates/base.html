@@ -14,6 +14,10 @@
 <body>
 
   <header>
+
+        <!-- ornamentos da apresentacao nos cantos (iguais aos da loja) -->
+    <img class="topo-ornamento esquerda" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
+    <img class="topo-ornamento direita" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
     
 
     <!-- titulo dentro da pagina -->
@@ -32,6 +36,7 @@
       <!-- opcoes para clicar na parte de cima da pagina -->
       <a href="{{ url_for('listar') }}">Lista</a>
       <a href="{{ url_for('buscar') }}">Buscar</a>
+      <a href="{{ url_for('estoque') }}">Estoque</a>
       <a href="{{ url_for('eventos') }}">Eventos</a>
       <a href="{{ url_for('carrossel') }}">Carrossel</a>
       <a href="{{ url_for('sobre') }}">Sobre</a>

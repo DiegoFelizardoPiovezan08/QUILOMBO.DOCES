@@ -21,7 +21,8 @@
       <tr>
         <th>Foto</th>
         <th>Nome</th>
-        <th>Descrição</th>
+        <th>Data</th>
+        <th>Local</th>
         <th></th>
       </tr>
       {% for p in eventos %}
@@ -34,7 +35,12 @@
             {% endif %}
           </td>
           <td>{{ p['nome'] }}</td>
-          <td>{{ p['descricao'] }}</td>
+          <td>
+            {{ p|datas_evento or '—' }}
+            <!-- evento que ja passou: continua aqui, mas nao aparece mais na loja -->
+            {% if evento_encerrado(p) %}<br><span class="selo selo-cancelado">Encerrado (fora da loja)</span>{% endif %}
+          </td>
+          <td>{{ p['local'] or '—' }}</td>
           <td>
             <a href="{{ url_for('editar_evento', id_evento=p['id']) }}">Editar</a>
             <form method="post" action="{{ url_for('excluir_evento', id_evento=p['id']) }}"

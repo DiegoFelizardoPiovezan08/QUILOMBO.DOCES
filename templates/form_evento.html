@@ -18,8 +18,47 @@
   </p>
 
   <p>
+    <!-- aparece na lista de eventos da loja -->
+    <label for="local">Local</label>
+    <input type="text" id="local" name="local" value="{{ dados.get('local', '') or '' }}"
+           placeholder="Ex.: Expo Imigrantes - São Paulo">
+    {% if erros.get('local') %}<span class="erro">{{ erros['local'] }}</span>{% endif %}
+  </p>
+
+  <!-- datas: o evento some da loja no dia seguinte ao ultimo dia -->
+  <div class="campos-lado">
+    <p>
+      <label for="data_inicio">Data</label>
+      <input type="date" id="data_inicio" name="data_inicio" value="{{ dados.get('data_inicio', '') or '' }}">
+      {% if erros.get('data_inicio') %}<span class="erro">{{ erros['data_inicio'] }}</span>{% endif %}
+    </p>
+    <p>
+      <label for="data_fim">Data de término (opcional)</label>
+      <input type="date" id="data_fim" name="data_fim" value="{{ dados.get('data_fim', '') or '' }}">
+      {% if erros.get('data_fim') %}<span class="erro">{{ erros['data_fim'] }}</span>{% endif %}
+    </p>
+  </div>
+  <span class="dica">Preencha a data de término só se o evento durar mais de um dia.
+    O evento sai da loja sozinho no dia seguinte ao último dia.</span>
+
+  <div class="campos-lado">
+    <p>
+      <label for="horario">Horário</label>
+      <input type="text" id="horario" name="horario" value="{{ dados.get('horario', '') or '' }}"
+             placeholder="Ex.: 10h às 20h">
+    </p>
+    <p>
+      <label for="taxa">Taxa de entrada</label>
+      <input type="text" id="taxa" name="taxa" value="{{ dados.get('taxa', '') or '' }}"
+             placeholder="Ex.: Grátis ou R$ 15,00">
+    </p>
+  </div>
+
+  <p>
+    <!-- descricao: so aparece quando o cliente clica em "Saiba mais" -->
     <label for="descricao">Descrição</label>
     <textarea id="descricao" name="descricao" rows="7">{{ dados.get('descricao', '') or '' }}</textarea>
+    <span class="dica">Aparece só na página do evento, quando o cliente clica em "Saiba mais".</span>
   </p>
 
   <p>
@@ -30,7 +69,7 @@
       <label class="check"><input type="checkbox" name="remover_imagem" value="1"> Remover foto atual</label>
     {% endif %}
     <input type="file" id="imagem" name="imagem" accept="image/*">
-    <span class="dica">JPG, PNG, GIF ou WEBP, até 5 MB. {% if dados.get('imagem') %}Escolha outra para trocar.{% endif %}</span>
+    <span class="dica">JPG, PNG, GIF ou WEBP, até 5 MB. Ideal: 1200 x 900 px (4:3). {% if dados.get('imagem') %}Escolha outra para trocar.{% endif %}</span>
     {% if erros.get('imagem') %}<span class="erro">{{ erros['imagem'] }}</span>{% endif %}
   </p>
 

@@ -1,0 +1,53 @@
+<!-- aba estoque: quantas unidades tem de cada doce -->
+{% extends "base.html" %}
+
+{% block titulo %}Estoque{% endblock %}
+
+{% block conteudo %}
+  <h2>Estoque</h2>
+
+  {% if msg %}
+    <p class="sucesso">{{ msg }}</p>
+  {% endif %}
+
+  <p class="dica">Os clientes nunca veem a quantidade: na loja só aparece <b>"Esgotado"</b> quando chega a 0.
+     O estoque baixa sozinho quando você confirma o pagamento de um pedido na aba Pedidos.</p>
+
+  {% if doces %}
+    <table>
+      <tr>
+        <th></th>
+        <th>Doce</th>
+        <th>Situação</th>
+        <th>Estoque</th>
+      </tr>
+      {% for d in doces %}
+        <tr class="{% if d['estoque'] <= 0 %}linha-esgotada{% endif %}">
+          <td>
+            {% if d['imagem'] %}
+              <img class="miniatura" src="{{ url_for('static', filename='uploads/' ~ d['imagem']) }}" alt="">
+            {% else %}
+              <span class="miniatura sem-foto">{{ d['nome'][0]|upper }}</span>
+            {% endif %}
+          </td>
+          <td><b>{{ d['nome'] }}</b></td>
+          <td>
+            {% if d['estoque'] <= 0 %}<span class="selo selo-cancelado">Esgotado</span>
+            {% elif d['estoque'] <= 5 %}<span class="selo selo-informado">Acabando</span>
+            {% else %}<span class="selo selo-pago">Disponível</span>{% endif %}
+          </td>
+          <td>
+            <!-- muda a quantidade e salva so esta linha -->
+            <form class="form-estoque" method="post" action="{{ url_for('mudar_estoque', id_doce=d['id']) }}">
+              <input type="number" name="estoque" value="{{ d['estoque'] }}" min="0" step="1"
+                     aria-label="Estoque de {{ d['nome'] }}">
+              <button type="submit">Salvar</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p class="vazio">Nenhum doce cadastrado ainda.</p>
+  {% endif %}
+{% endblock %}

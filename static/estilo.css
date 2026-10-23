@@ -27,7 +27,7 @@
   --raio:         10px;
   --raio-grande:  12px;
   --sombra:       0 2px 10px rgba(74, 42, 30, 0.10);
-    --sombra-forte: 0 8px 20px rgba(74, 42, 30, 0.18);
+  --sombra-forte: 0 8px 20px rgba(74, 42, 30, 0.18);
 
   /* fontes do logo (carregadas do Google Fonts no base.html / base_loja.html) */
   --fonte-texto:  "Poppins", Arial, sans-serif;   /* textos, titulos e botoes */
@@ -83,12 +83,26 @@ header {
   position: relative;
   background: var(--raiz);
   color: var(--areia);
-  padding: 18px 24px 0;
+  padding: 26px 24px 0;
   border-bottom: 4px solid var(--ouro);
 }
 
+/* ornamentos da apresentacao nos dois cantos do cabecalho */
+header { overflow: hidden; }
+.topo-ornamento {
+  position: absolute;
+  top: 0;
+  width: 300px;
+  pointer-events: none;      /* nao atrapalha os cliques */
+}
+.topo-ornamento.esquerda { left: 0; }
+.topo-ornamento.direita { right: 0; transform: scaleX(-1); }
+
+header h1,
+nav { position: relative; }
+
 header h1 {
-  margin: 0 0 12px;
+  margin: 0 0 18px;
   display: flex;
   justify-content: center;
 }
@@ -104,8 +118,8 @@ header h1 {
 .logo:hover { color: var(--areia); }
 
 .logo-img {
-  width: 58px;
-  height: 58px;
+  width: 78px;
+  height: 78px;
   flex-shrink: 0;
 }
 
@@ -118,14 +132,14 @@ header h1 {
 
 .logo-nome {
   font-family: var(--fonte-marca);
-  font-size: 2rem;
+  font-size: 2.7rem;
   letter-spacing: 0.5px;
 }
 
 .logo-sub {
   font-family: var(--fonte-texto);
   font-weight: 300;
-  font-size: 1rem;
+  font-size: 1.25rem;
   letter-spacing: 0.25em;
   margin-right: -0.25em;    /* compensa o espaco depois da ultima letra */
   text-transform: uppercase;
@@ -138,7 +152,7 @@ header h1 {
   padding-left: 16px;
   border-left: 2px solid rgba(242, 228, 200, 0.35);
   font-family: var(--fonte-texto);
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 500;
   letter-spacing: 0.5px;
 }
@@ -159,7 +173,8 @@ nav {
 nav a {
   color: var(--areia);
   text-decoration: none;
-  padding: 10px 20px;
+  padding: 12px 26px;
+  font-size: 1.1rem;
   border-radius: var(--raio) var(--raio) 0 0;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -206,10 +221,10 @@ main h2 {
 
 footer {
   text-align: center;
-  padding: 18px;
+  padding: 10px;
   background: var(--raiz);
   color: var(--areia);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 /* ---------- tabelas ---------- */
@@ -238,6 +253,7 @@ td {
 }
 
 tr:hover td { background: rgba(242, 228, 200, 0.45); }
+
 /* botao da estrela (Destaque) na lista de doces */
 .btn-destaque {
   background: transparent;
@@ -277,6 +293,11 @@ tr:hover td { background: rgba(242, 228, 200, 0.45); }
 
 /* pedido em que o cliente avisou que pagou: linha em destaque */
 .linha-destaque td { background: #fff4e0; }
+
+/* aba Estoque: linha do doce esgotado e campo pequeno com o botao do lado */
+.linha-esgotada td { background: var(--erro-bg); }
+.form-estoque { display: flex; gap: 8px; align-items: center; }
+.form-estoque input[type="number"] { width: 90px; }
 
 /* etiquetas de situacao */
 .selo {
@@ -349,6 +370,27 @@ button:hover { background: var(--cacau-2); }
   color: var(--branco);
 }
 
+/* "+ Nova categoria": mesmo formato, cor marrom, do lado do "+ Cadastrar novo doce" */
+.botao-secundario { background: var(--raiz); }
+.botao-secundario:hover { background: var(--cacau-2); }
+.botoes-topo { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* caixa de selecao (categoria do doce) com o mesmo visual dos campos */
+select {
+  width: 100%;
+  max-width: 420px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--cacau);
+  background: var(--areia);
+  border: 2px solid var(--borda);
+  border-radius: var(--raio);
+  cursor: pointer;
+}
+select:focus { outline: none; border-color: var(--terracota); }
+.caixa-envio .botao { margin-bottom: 16px; }
+
 /* Adicionar ao carrinho */
 .btn-carrinho {
   background: var(--ouro);
@@ -376,10 +418,9 @@ button:hover { background: var(--cacau-2); }
 }
 .perigo:hover { background: #a02a1f; }
 
-
-
 /* "Avisar cliente no WhatsApp" na linha do pedido pago */
 .link-whatsapp { color: var(--verde-hover); font-weight: 600; font-size: 0.9rem; }
+
 /* excluir (link pequeno na lista) */
 .link-perigo {
   background: none;
@@ -420,6 +461,9 @@ textarea {
 
 /* caixas de texto (descricoes): largura toda, altura minima boa e
    da para aumentar puxando o canto de baixo */
+input[type="text"],
+input[type="number"],
+input[type="date"],
 textarea {
   max-width: 100%;
   min-height: 160px;
@@ -427,11 +471,23 @@ textarea {
   line-height: 1.6;
 }
 
+/* dois campos lado a lado (datas, horario e taxa do evento) */
+.campos-lado {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 18px;
+  max-width: 640px;
+}
+.campos-lado p { margin-bottom: 8px; }
+.campos-lado + .dica { margin: -2px 0 16px; }
+
+
 /* texto digitado em caixa de texto: mantem as quebras de linha */
 .texto-livre { white-space: pre-line; overflow-wrap: anywhere; }
 
 input[type="text"]:focus,
 input[type="number"]:focus,
+input[type="date"]:focus,
 textarea:focus {
   outline: none;
   border-color: var(--terracota);
@@ -626,9 +682,12 @@ main h3 {
 
   .logo-img { width: 46px; height: 46px; }
   .logo-nome { font-size: 1.6rem; }
+  .logo-sub { font-size: 1rem; }
+  .topo-ornamento { width: 130px; }
   .logo-area { font-size: 0.85rem; padding-left: 10px; }
   nav a { padding: 8px 12px; font-size: 0.9rem; }
 
+  .campos-lado { grid-template-columns: 1fr; }
 
   /* tabela rola para o lado em vez de estourar a tela */
   table { display: block; overflow-x: auto; white-space: nowrap; }

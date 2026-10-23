@@ -117,6 +117,36 @@ def conectar_banco():
     # coluna "destaque" em doces: 1 = aparece nos Destaques da pagina inicial
     if "destaque" not in colunas:
         conn.execute("ALTER TABLE doces ADD COLUMN destaque INTEGER NOT NULL DEFAULT 0")
+
+    # coluna "estoque" em doces: quantas unidades ainda tem (0 = esgotado)
+    if "estoque" not in colunas:
+        conn.execute("ALTER TABLE doces ADD COLUMN estoque INTEGER NOT NULL DEFAULT 0")
+
+        # categorias dos doces (Bolos, Brigadeiros, Licores...), criadas no admin
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS categorias (
+                id    INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome  TEXT    NOT NULL
+            )
+        ''')
+
+    # coluna "categoria_id" em doces: de qual categoria e o doce (vazio = sem categoria)
+    if "categoria_id" not in colunas:
+        conn.execute("ALTER TABLE doces ADD COLUMN categoria_id INTEGER")
+
+
+    # eventos: local, datas (AAAA-MM-DD), horario e taxa de entrada
+    colunas_eventos = [c["name"] for c in conn.execute("PRAGMA table_info(eventos)")]
+    for coluna in ("local", "data_inicio", "data_fim", "horario", "taxa"):
+        if coluna not in colunas_eventos:
+            conn.execute(f"ALTER TABLE eventos ADD COLUMN {coluna} TEXT")
+
+
+    # coluna "itens_json" em pedidos: {id do doce: quantidade}, usada para
+    # baixar o estoque quando o administrador confirma o pagamento
+    colunas = [c["name"] for c in conn.execute("PRAGMA table_info(pedidos)")]
+    if "itens_json" not in colunas:
+        conn.execute("ALTER TABLE pedidos ADD COLUMN itens_json TEXT")
     conn.commit()
     return conn
 

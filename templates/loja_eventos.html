@@ -22,9 +22,13 @@
 
         <div class="evento-texto">
           <h3><a href="{{ url_for('loja_evento', id_evento=e['id']) }}">{{ e['nome'] }}</a></h3>
-          {% if e['descricao'] %}
-            <p>{{ e['descricao']|truncate(220) }}</p>
-          {% endif %}
+          <!-- informacoes do evento (a descricao fica so no "Saiba mais") -->
+          <dl class="evento-info">
+            {% if e['local'] %}<dt>Local</dt><dd>{{ e['local'] }}</dd>{% endif %}
+            {% if e['data_inicio'] %}<dt>Data</dt><dd>{{ e|datas_evento }}</dd>{% endif %}
+            {% if e['horario'] %}<dt>Horário</dt><dd>{{ e['horario'] }}</dd>{% endif %}
+            {% if e['taxa'] %}<dt>Entrada</dt><dd>{{ e['taxa'] }}</dd>{% endif %}
+          </dl>
           <a class="btn btn-principal" href="{{ url_for('loja_evento', id_evento=e['id']) }}">Saiba mais</a>
         </div>
       </article>

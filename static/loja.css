@@ -84,24 +84,34 @@ h3 { margin: 0; }
 
 a { text-decoration: none; }
 
-/* ---------- topo ---------- */
+/* ---------- topo ----------
+   igual ao do administrador: logo no meio, menu em abas embaixo.
+   Na loja, "Entrar" e "Carrinho" ficam no canto de cima. */
 
 .topo {
+  position: relative;
+  overflow: hidden;          /* os ornamentos nao passam do cabecalho */
   background: var(--raiz);
+  color: var(--areia);
+  padding: 26px 24px 0;
   border-bottom: 4px solid var(--ouro);
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
-.topo-conteudo {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 14px 20px;
+/* ornamentos da apresentacao nos dois cantos do cabecalho */
+.topo-ornamento {
+  position: absolute;
+  top: 0;
+  width: 300px;
+  pointer-events: none;      /* nao atrapalha os cliques */
+}
+.topo-ornamento.esquerda { left: 0; }
+.topo-ornamento.direita { right: 0; transform: scaleX(-1); }
+
+.topo-logo {
+  position: relative;
+  margin: 0 0 18px;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* logo: circulo + "Quilombo" (fonte do logo) + "DOCES" (Poppins fina) */
@@ -115,8 +125,8 @@ a { text-decoration: none; }
 .logo:hover { color: var(--areia); }
 
 .logo-img {
-  width: 58px;
-  height: 58px;
+  width: 78px;
+  height: 78px;
   flex-shrink: 0;
 }
 
@@ -129,63 +139,97 @@ a { text-decoration: none; }
 
 .logo-nome {
   font-family: var(--fonte-marca);
-  font-size: 2rem;
+  font-size: 2.7rem;
   letter-spacing: 0.5px;
 }
 
 .logo-sub {
   font-family: var(--fonte-texto);
   font-weight: 300;
-  font-size: 1rem;
+  font-size: 1.25rem;
   letter-spacing: 0.25em;
   margin-right: -0.25em;    /* compensa o espaco depois da ultima letra */
   text-transform: uppercase;
   color: var(--ouro);
 }
 
-/* ---------- menu do topo (Produtos, Eventos, Carrinho) ----------
-   Os tres botoes tem o mesmo design: pilula com borda areia,
-   e fundo terracota ao passar o mouse ou na pagina atual. */
-
-.menu {
-  margin-left: auto;
+/* conta e carrinho no canto de cima, a direita: so os desenhos,
+   sem contorno, na mesma altura do meio do logo e fora dos ornamentos */
+.topo-conta {
+  position: absolute;
+  top: 37px;                 /* mesma altura do meio do logo */
+  right: 320px;              /* fica antes do ornamento do canto (300px) */
+  z-index: 1;
   display: flex;
+  gap: 6px;
+}
+
+.icone-link {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.menu a {
-  display: inline-block;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
   color: var(--areia);
-  font-weight: 700;
-  padding: 8px 18px;
-  border: 2px solid var(--areia);
+  transition: color 0.2s, transform 0.2s;
+}
+.icone-link:hover { color: var(--areia); transform: scale(1.08); }
+
+/* desenho em linha; ao passar o mouse (ou na pagina atual) fica preenchido */
+.icone {
+  width: 34px;
+  height: 34px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icone .roda { fill: currentColor; }
+.icone .preencher { transition: fill 0.2s; }
+.icone-link:hover .preencher,
+.icone-link.ativo .preencher { fill: currentColor; }
+
+/* numero de itens no carrinho, no canto do desenho */
+.contador {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  min-width: 20px;
+  padding: 1px 5px;
+  background: var(--terracota);
+  color: var(--branco);
   border-radius: 999px;
-  white-space: nowrap;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
 }
 
+/* menu em abas (Produtos, Eventos, Sobre), igual ao do administrador */
+.menu {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.menu a {
+  color: var(--areia);
+  padding: 12px 26px;
+  font-size: 1.1rem;
+  border-radius: var(--raio) var(--raio) 0 0;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: background 0.2s;
+}
 .menu a:hover,
 .menu a.ativo {
   background: var(--terracota);
-  border-color: var(--terracota);
   color: var(--branco);
 }
-
-.contador {
-  display: inline-block;
-  min-width: 22px;
-  margin-left: 6px;
-  padding: 1px 6px;
-  background: var(--terracota);
-  color: var(--branco);
-  border-radius: 999px;
-  font-size: 0.8rem;
-  text-align: center;
-}
-.menu a:hover .contador,
-.menu a.ativo .contador { background: var(--branco); color: var(--terracota); }
 
 /* ---------- conteudo ---------- */
 
@@ -406,6 +450,39 @@ a { text-decoration: none; }
 
 .resultado { margin: -6px 0 18px; color: var(--texto-suave); }
 
+/* ---------- categorias (pagina Produtos) ----------
+   botoes "Todos / Bolos / Brigadeiros..." e o titulo de cada bloco */
+
+.categorias-filtro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 24px;
+}
+.categorias-filtro a {
+  padding: 7px 18px;
+  border: 2px solid var(--terracota);
+  border-radius: 999px;
+  color: var(--terracota);
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: background 0.2s, color 0.2s;
+}
+.categorias-filtro a:hover,
+.categorias-filtro a.ativo {
+  background: var(--terracota);
+  color: var(--branco);
+}
+
+.categoria-titulo {
+  margin: 30px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px dashed var(--borda);
+  font-size: 1.4rem;
+  color: var(--raiz);
+}
+.categoria-titulo:first-of-type { margin-top: 0; }
+
 /* ---------- vitrine (cards de doces e eventos) ---------- */
 
 .grade {
@@ -493,6 +570,41 @@ a { text-decoration: none; }
   color: var(--terracota);
 }
 .preco-grande { font-size: 1.8rem; }
+
+/* ---------- doce esgotado (estoque 0) ----------
+   etiqueta "Esgotado" por cima da foto e botao cinza desativado */
+
+.card-img,
+.produto-img { position: relative; }
+
+.selo-esgotado {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--raiz);
+  color: var(--areia);
+  font-family: var(--fonte-texto);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.esgotado .card-img img,
+.produto-img.esgotado img { filter: grayscale(0.7); opacity: 0.75; }
+
+.btn-esgotado,
+.btn-esgotado:hover {
+  background: var(--areia-escura);
+  color: var(--texto-suave);
+  cursor: not-allowed;
+}
+.btn-esgotado:active { transform: none; }
+
+.item-aviso { margin: 4px 0 0; color: var(--perigo); font-size: 0.88rem; font-weight: 600; }
 
 /* ---------- pagina de um produto / de um evento ---------- */
 
@@ -739,6 +851,18 @@ a { text-decoration: none; }
   color: var(--texto-suave);
 }
 
+/* informacoes do evento na lista: Local, Data, Horario, Entrada */
+.evento-info {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  margin: 0;
+  font-size: 1.02rem;
+}
+.evento-info dt { font-weight: 700; color: var(--raiz); }
+.evento-info dd { margin: 0; color: var(--texto-suave); overflow-wrap: anywhere; }
+
+
 /* ---------- pagina Sobre (historia da loja) ----------
    uma foto em cima e o texto embaixo, direto no fundo da pagina */
 
@@ -929,6 +1053,7 @@ a { text-decoration: none; }
 .formulario input:focus { outline: none; border-color: var(--terracota); }
 .formulario .btn { align-self: flex-start; margin-top: 10px; }
 .formulario h3:not(:first-of-type) { margin-top: 18px; }
+
 /* asterisco vermelho dos campos obrigatorios */
 .obrigatorio { color: var(--perigo); font-weight: 700; }
 
@@ -1050,23 +1175,62 @@ a { text-decoration: none; }
 /* ---------- rodape ---------- */
 
 .rodape {
+  position: relative;
+  overflow: hidden;          /* os desenhos nao passam do rodape */
   background: var(--raiz);
   color: var(--areia);
   text-align: center;
-  padding: 22px 20px;
-  font-size: 0.95rem;
+  padding: 12px 20px;
+  font-size: 0.85rem;
 }
-.rodape p { margin: 4px 0; }
+.rodape p { margin: 2px 0; }
 .rodape a { color: var(--ouro); }
 .rodape a:hover { color: var(--areia); }
+
+/* desenhos da apresentacao nos cantos de baixo do rodape */
+.rodape-ornamento {
+  position: absolute;
+  bottom: 0;
+  width: 160px;
+  pointer-events: none;
+}
+.rodape-ornamento.esquerda { left: 0; transform: scaleY(-1); }
+.rodape-ornamento.direita { right: 0; transform: rotate(180deg); }
+.rodape > p, .rodape-logo { position: relative; }
+
+/* logo e slogan "Doces com historia." no rodape */
+.rodape-logo { display: block; width: 40px; margin: 0 auto 2px; }
+.rodape-slogan { font-family: var(--fonte-marca); font-size: 1.1rem; }
+
+/* ---------- telas um pouco menores (notebook) ----------
+   ornamentos menores para os desenhos de conta e carrinho caberem
+   entre o slogan e o ornamento */
+@media (max-width: 1500px) {
+  .topo-ornamento { width: 200px; }
+  .topo-conta { right: 214px; }
+}
+
+/* ---------- telas medias (tablet) ----------
+   sem espaco do lado do logo: conta e carrinho ficam em cima dele */
+@media (max-width: 1300px) {
+  .topo-conta { position: static; justify-content: center; margin-bottom: 8px; }
+}
 
 /* ---------- celular ---------- */
 
 @media (max-width: 760px) {
-  .topo-conteudo { justify-content: center; }
-  .menu { margin-left: 0; justify-content: center; }
+  /* topo no celular: Entrar e carrinho em cima do logo, tudo menor */
+  .topo { padding: 12px 12px 0; }
+  .topo-conta { position: static; justify-content: center; margin-bottom: 6px; }
+  .icone-link { width: 48px; height: 48px; }
+  .icone { width: 30px; height: 30px; }
+  .topo-ornamento { width: 130px; }
   .logo-img { width: 46px; height: 46px; }
   .logo-nome { font-size: 1.6rem; }
+  .logo-sub { font-size: 1rem; }
+  .menu a { padding: 8px 12px; font-size: 0.9rem; }
+
+  .rodape-ornamento { width: 130px; }
 
   .carrossel-slides { height: 240px; }
   .slide figcaption { font-size: 1.2rem; padding: 40px 16px 40px; }
