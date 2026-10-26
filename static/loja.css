@@ -88,13 +88,24 @@ a { text-decoration: none; }
    igual ao do administrador: logo no meio, menu em abas embaixo.
    Na loja, "Entrar" e "Carrinho" ficam no canto de cima. */
 
+/* ---------- topo ----------
+   logo no meio; no canto de cima, o menu (3 barras), a conta e o carrinho */
+
 .topo {
   position: relative;
-  overflow: hidden;          /* os ornamentos nao passam do cabecalho */
+  z-index: 10;               /* o menu aberto fica por cima do carrossel */
   background: var(--raiz);
   color: var(--areia);
-  padding: 26px 24px 0;
+  padding: 26px 24px 8px;
   border-bottom: 4px solid var(--ouro);
+}
+
+/* caixa dos ornamentos: corta os desenhos no tamanho do cabecalho */
+.topo-fundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 /* ornamentos da apresentacao nos dois cantos do cabecalho */
@@ -208,25 +219,41 @@ a { text-decoration: none; }
   text-align: center;
 }
 
-/* menu em abas (Produtos, Eventos, Sobre), igual ao do administrador */
-.menu {
-  position: relative;
+/* menu das 3 barras: botao igual aos desenhos da conta e do carrinho */
+.menu-caixa { position: relative; }
+.menu-botao {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+.menu-botao .icone { stroke-width: 2.2; }
+
+/* lista que abre embaixo do botao: Inicio, Produtos, Eventos, Sobre */
+.menu-gaveta {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
+  min-width: 210px;
+  padding: 8px;
+  background: var(--areia);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-grande);
+  box-shadow: var(--sombra-forte);
 }
-.menu a {
-  color: var(--areia);
-  padding: 12px 26px;
-  font-size: 1.1rem;
-  border-radius: var(--raio) var(--raio) 0 0;
+.menu-gaveta[hidden] { display: none; }
+.menu-gaveta a {
+  padding: 12px 16px;
+  border-radius: var(--raio);
+  color: var(--raiz);
+  font-size: 1.05rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
-  transition: background 0.2s;
 }
-.menu a:hover,
-.menu a.ativo {
+.menu-gaveta a:hover,
+.menu-gaveta a.ativo {
   background: var(--terracota);
   color: var(--branco);
 }
@@ -518,16 +545,25 @@ a { text-decoration: none; }
   font-family: var(--fonte-marca);
   font-weight: normal;
 }
-.card-img { height: 180px; font-size: 4rem; }
+.card-img { aspect-ratio: 1 / 1; font-size: 4rem; }   /* foto quadrada */
 .card-img:hover { color: var(--raiz); }
 
+/* fotos dos produtos: todas quadradas e do mesmo tamanho. A foto preenche
+   o quadrado; se nao for quadrada, as sobras das bordas sao cortadas
+   (sempre a partir do centro). Ideal: fotos quadradas, ex.: 1000 x 1000 */
 .card-img img,
 .produto-img img,
 .item-img img {
   width: 100%;
   height: 100%;
-  object-fit: contain;     /* mostra a foto inteira, seja qual for o formato */
-  background: var(--areia); /* preenche a sobra quando o formato e diferente */
+  object-fit: cover;
+  object-position: center;
+}
+
+/* pagina do evento: mostra a foto inteira (fotos de evento sao deitadas) */
+.foto-inteira img {
+  object-fit: contain;
+  background: var(--areia);
 }
 .card-img img { transition: transform 0.3s; }
 .card-doce:hover .card-img img { transform: scale(1.05); }
@@ -766,11 +802,14 @@ a { text-decoration: none; }
 
 .grade-lista .card-doce { flex-direction: row; }
 
+.grade-lista .card-doce { align-items: center; }
 .grade-lista .card-img {
   position: relative;
-  flex: 0 0 180px;
-  height: auto;
-  min-height: 170px;
+  flex: 0 0 160px;
+  width: 160px;
+  height: 160px;             /* quadrado */
+  margin: 14px 0 14px 14px;
+  border-radius: var(--raio);
 }
 /* a foto ocupa a moldura sem esticar o card (foto em pe nao deixa o card alto) */
 .grade-lista .card-img img {
@@ -1228,7 +1267,6 @@ a { text-decoration: none; }
   .logo-img { width: 46px; height: 46px; }
   .logo-nome { font-size: 1.6rem; }
   .logo-sub { font-size: 1rem; }
-  .menu a { padding: 8px 12px; font-size: 0.9rem; }
 
   .rodape-ornamento { width: 130px; }
 
@@ -1244,7 +1282,7 @@ a { text-decoration: none; }
 
   /* produtos no celular: foto menor na esquerda */
   .grade-lista { grid-template-columns: 1fr; }
-  .grade-lista .card-img { flex-basis: 120px; min-height: 140px; font-size: 3rem; }
+    .grade-lista .card-img { flex-basis: 110px; width: 110px; height: 110px; font-size: 3rem; }
   .grade-lista .card-corpo { padding: 14px 16px; }
 
   .carrinho { grid-template-columns: 1fr; }

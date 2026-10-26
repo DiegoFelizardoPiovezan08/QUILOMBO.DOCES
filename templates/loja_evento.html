@@ -7,7 +7,7 @@
   <p class="voltar"><a href="{{ url_for('loja_eventos') }}">&larr; Voltar aos eventos</a></p>
 
   <section class="produto">
-    <div class="produto-img">
+      <div class="produto-img foto-inteira">
       {% if evento['imagem'] %}
         <img src="{{ url_for('static', filename='uploads/' ~ evento['imagem']) }}" alt="{{ evento['nome'] }}">
       {% else %}

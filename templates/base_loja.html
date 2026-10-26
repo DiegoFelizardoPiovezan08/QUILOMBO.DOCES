@@ -12,15 +12,37 @@
 </head>
 <body>
 
-  <!-- topo: igual ao do administrador (logo no meio e menu em abas embaixo);
-       na loja, "Entrar" e "Carrinho" ficam no canto de cima -->
+  <!-- topo: logo no meio; no canto, o menu (3 barras), a conta e o carrinho -->
   <header class="topo">
-    <!-- ornamentos da apresentacao nos cantos -->
-    <img class="topo-ornamento esquerda" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
-    <img class="topo-ornamento direita" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
+    <!-- ornamentos da apresentacao nos cantos (numa caixa propria, para o menu
+         poder abrir para fora do cabecalho sem os desenhos "vazarem") -->
+    <div class="topo-fundo" aria-hidden="true">
+      <img class="topo-ornamento esquerda" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
+      <img class="topo-ornamento direita" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
+    </div>
 
-    <!-- conta do cliente e carrinho: so os desenhos (o nome aparece ao passar o mouse) -->
+    <!-- menu (3 barras), conta do cliente e carrinho: so os desenhos -->
     <div class="topo-conta">
+      <!-- menu: ao clicar abre Inicio, Produtos, Eventos e Sobre -->
+      <div class="menu-caixa">
+        <button type="button" class="icone-link menu-botao" id="menu-botao"
+                aria-label="Menu" title="Menu" aria-expanded="false" aria-controls="menu-loja">
+          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 6.5h16M4 12h16M4 17.5h16"/>
+          </svg>
+        </button>
+        <nav class="menu-gaveta" id="menu-loja" hidden>
+          <a href="{{ url_for('loja') }}"
+             {% if request.endpoint == 'loja' %}class="ativo"{% endif %}>Início</a>
+          <a href="{{ url_for('loja_produtos') }}"
+             {% if request.endpoint in ('loja_produtos', 'loja_produto') %}class="ativo"{% endif %}>Produtos</a>
+          <a href="{{ url_for('loja_eventos') }}"
+             {% if request.endpoint in ('loja_eventos', 'loja_evento') %}class="ativo"{% endif %}>Eventos</a>
+          <a href="{{ url_for('loja_sobre') }}"
+             {% if request.endpoint == 'loja_sobre' %}class="ativo"{% endif %}>Sobre</a>
+        </nav>
+      </div>
+
       <a class="icone-link {% if request.endpoint and request.endpoint.startswith('contas.') %}ativo{% endif %}"
          href="{{ url_for('contas.minha_conta') }}"
          aria-label="{{ 'Minha conta (' ~ cliente['nome'].split()[0] ~ ')' if cliente else 'Entrar' }}"
@@ -54,17 +76,32 @@
         </span>
       </a>
     </h1>
-
-    <!-- menu em abas; a classe "ativo" pinta a aba da pagina em que a pessoa esta -->
-    <nav class="menu">
-      <a href="{{ url_for('loja_produtos') }}"
-         {% if request.endpoint in ('loja_produtos', 'loja_produto') %}class="ativo"{% endif %}>Produtos</a>
-      <a href="{{ url_for('loja_eventos') }}"
-         {% if request.endpoint in ('loja_eventos', 'loja_evento') %}class="ativo"{% endif %}>Eventos</a>
-      <a href="{{ url_for('loja_sobre') }}"
-         {% if request.endpoint == 'loja_sobre' %}class="ativo"{% endif %}>Sobre</a>
-    </nav>
   </header>
+
+  <!-- abre e fecha o menu das 3 barras (fecha tambem ao clicar fora ou apertar Esc) -->
+  <script>
+    (function () {
+      var botao = document.getElementById('menu-botao');
+      var menu = document.getElementById('menu-loja');
+
+      function abrir(sim) {
+        menu.hidden = !sim;
+        botao.setAttribute('aria-expanded', sim ? 'true' : 'false');
+        botao.classList.toggle('ativo', sim);
+      }
+
+      botao.addEventListener('click', function (e) {
+        e.stopPropagation();
+        abrir(menu.hidden);
+      });
+      document.addEventListener('click', function (e) {
+        if (!menu.hidden && !menu.contains(e.target)) { abrir(false); }
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { abrir(false); }
+      });
+    })();
+  </script>
 
   <main class="conteudo">
     {% with mensagens = get_flashed_messages() %}
