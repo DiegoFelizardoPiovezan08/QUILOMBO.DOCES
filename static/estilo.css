@@ -278,6 +278,77 @@ tr:hover td { background: rgba(242, 228, 200, 0.45); }
 
 /* ---------- aba Pedidos ---------- */
 
+/* abas "Pendentes" e "Historico" */
+.abas-pedidos {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--borda);
+  margin: 16px 0;
+}
+.abas-pedidos a {
+  padding: 8px 18px;
+  border-radius: 10px 10px 0 0;
+  font-weight: 600;
+  color: var(--texto-suave);
+  text-decoration: none;
+  margin-bottom: -2px;
+  border: 2px solid transparent;
+}
+.abas-pedidos a:hover { background: var(--areia); }
+.abas-pedidos a.ativo {
+  background: #fff;
+  color: var(--cacau);
+  border-color: var(--borda);
+  border-bottom-color: #fff;
+}
+
+/* linha de cima do historico: resumo a esquerda e o select no canto direito */
+.historico-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+.resumo-mes { color: var(--texto-suave); margin: 0; }
+
+/* select dos meses (Janeiro 2026, Fevereiro 2026...): caixinha compacta e
+   arredondada, sempre no canto direito */
+form.meses-pedidos { margin: 0 0 0 auto; }
+.meses-pedidos select {
+  width: auto;
+  min-width: 0;
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  border-width: 1.5px;
+  border-radius: 999px;
+  background: #fff;
+}
+.meses-pedidos select:hover { border-color: var(--ouro); }
+
+/* paginas do historico: Anterior 1 2 3 Proxima */
+.paginacao {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 18px;
+}
+.paginacao a {
+  min-width: 36px;
+  padding: 5px 12px;
+  border: 1.5px solid var(--borda);
+  border-radius: 999px;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+.paginacao a:hover { background: var(--areia); border-color: var(--ouro); color: var(--cacau); }
+.paginacao a.ativo { background: var(--ouro); border-color: var(--ouro); color: var(--cacau); }
+
 /* numero de pedidos esperando conferencia, no menu */
 .contador-pedidos {
   display: inline-block;
@@ -434,6 +505,24 @@ select:focus { outline: none; border-color: var(--terracota); }
   color: #8c1f15;
 }
 
+/* "Desfazer confirmacao" e "Cancelar pedido" embaixo do aviso no WhatsApp */
+.acoes-pago {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+.acoes-pago form { margin: 0; }
+.acoes-pago button { padding: 2px 0; font-size: 0.85rem; }
+.link-simples {
+  background: none;
+  color: var(--texto-suave);
+  text-decoration: underline;
+  font-weight: 500;
+}
+.link-simples:hover { background: none; color: var(--cacau); }
+
 /* ---------- formularios ---------- */
 
 form p { margin: 0 0 16px; }
@@ -544,6 +633,10 @@ form[method="get"] {
   margin-bottom: 16px;
 }
 form[method="get"] input[type="text"] { flex: 1; min-width: 200px; }
+
+/* barra de pesquisa da aba Doces: campo, botao e "Limpar" na mesma linha */
+.busca-admin { align-items: center; margin-top: 8px; }
+.limpar-busca { font-weight: 600; padding: 0 6px; }
 
 /* caixa de envio de foto (aba Carrossel) */
 .caixa-envio {

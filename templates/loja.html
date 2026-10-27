@@ -98,4 +98,21 @@
   {% endif %}
 
 
+  <!-- MAIS VENDIDOS: os doces com mais unidades em pedidos pagos
+       (a conta fica na funcao mais_vendidos, no app.py). So aparece
+       depois que a loja tiver pelo menos uma venda confirmada -->
+  {% if vendidos %}
+    <div class="secao-cabecalho">
+      <h2 class="secao-titulo">Mais vendidos</h2>
+    </div>
+
+    <div class="grade">
+      {% for p in vendidos %}
+        {% set ranking = loop.index %}
+        {% include "_card_doce.html" %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+
 {% endblock %}

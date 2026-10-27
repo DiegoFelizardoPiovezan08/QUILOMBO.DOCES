@@ -1,4 +1,5 @@
-<!-- aba pedidos: conferir os Pix recebidos e confirmar os pedidos -->
+<!-- aba pedidos: "Pendentes" (conferir os Pix e confirmar) e
+     "Historico" (pedidos ja finalizados, separados por mes) -->
 {% extends "base.html" %}
 
 {% block titulo %}Pedidos{% endblock %}
@@ -11,8 +12,39 @@
   {% endif %}
 
 
-  <p class="dica">Antes de confirmar, abra o app do banco e veja se caiu um Pix com o <b>valor do pedido</b>
-     (em muitos bancos aparece também o identificador <b>QD</b> + número do pedido).</p>
+  <!-- as duas abas -->
+  <div class="abas-pedidos">
+    <a href="{{ url_for('pedidos') }}" class="{% if aba == 'pendentes' %}ativo{% endif %}">
+      Pendentes{% if qtd_pendentes %} ({{ qtd_pendentes }}){% endif %}</a>
+    <a href="{{ url_for('pedidos', aba='historico') }}" class="{% if aba == 'historico' %}ativo{% endif %}">
+      Histórico</a>
+  </div>
+
+  {% if aba == 'pendentes' %}
+    <p class="dica">Antes de confirmar, abra o app do banco e veja se caiu um Pix com o <b>valor do pedido</b>
+       (em muitos bancos aparece também o identificador <b>QD</b> + número do pedido).</p>
+  {% else %}
+    <!-- linha de cima do historico: resumo a esquerda, select do mes no canto direito -->
+    <div class="historico-topo">
+      {% if pedidos %}
+        <p class="resumo-mes">{{ qtd_pagos }} pedido(s) pago(s) &middot; <b>R$ {{ total_pago|brl }}</b> recebidos</p>
+      {% endif %}
+
+      <!-- ao escolher um mes a pagina ja recarrega com os pedidos dele -->
+      {% if meses %}
+        <form class="meses-pedidos" method="get" action="{{ url_for('pedidos') }}">
+          <input type="hidden" name="aba" value="historico">
+          <select id="mes" name="mes" onchange="this.form.submit()" aria-label="Escolher o mês">
+            <option value="">Todos os meses</option>
+            {% for m in meses %}
+              <option value="{{ m.valor }}" {% if mes == m.valor %}selected{% endif %}>{{ m.nome }} ({{ m.qtd }})</option>
+            {% endfor %}
+          </select>
+          <noscript><button type="submit">Ver</button></noscript>
+        </form>
+      {% endif %}
+    </div>
+  {% endif %}
 
   {% if pedidos %}
     <table>
@@ -54,15 +86,49 @@
               <form method="post" action="{{ url_for('mudar_pedido', id_pedido=p['id'], acao='cancelar') }}"
                     onsubmit="return confirm('Cancelar este pedido?');">
                 <button type="submit" class="link-perigo">Cancelar</button>
-                      </form>
+              </form>
             {% elif p['status'] == 'pago' %}
               <a class="link-whatsapp" href="{{ p|aviso_pagamento }}" target="_blank">Avisar cliente no WhatsApp</a>
+              <!-- para quando o admin confirmou errado ou mudou de ideia
+                   (os doces voltam para o estoque) -->
+              <div class="acoes-pago">
+                <form method="post" action="{{ url_for('mudar_pedido', id_pedido=p['id'], acao='desfazer') }}"
+                      onsubmit="return confirm('Desfazer a confirmação? O pedido volta para Pendentes.');">
+                  <input type="hidden" name="aba" value="{{ aba }}">
+                  <input type="hidden" name="mes" value="{{ mes }}">
+                  <input type="hidden" name="pagina" value="{{ pagina }}">
+                  <button type="submit" class="link-simples">Desfazer confirmação</button>
+                </form>
+                <form method="post" action="{{ url_for('mudar_pedido', id_pedido=p['id'], acao='cancelar') }}"
+                      onsubmit="return confirm('Cancelar este pedido já pago? Lembre de devolver o Pix ao cliente.');">
+                  <input type="hidden" name="aba" value="{{ aba }}">
+                  <input type="hidden" name="mes" value="{{ mes }}">
+                  <input type="hidden" name="pagina" value="{{ pagina }}">
+                  <button type="submit" class="link-perigo">Cancelar pedido</button>
+                </form>
+              </div>
             {% endif %}
           </td>
         </tr>
       {% endfor %}
     </table>
+
+    <!-- paginas do historico (10 pedidos por pagina) -->
+    {% if aba == 'historico' and total_paginas > 1 %}
+      <nav class="paginacao" aria-label="Páginas do histórico">
+        {% if pagina > 1 %}
+          <a href="{{ url_for('pedidos', aba='historico', mes=mes, pagina=pagina - 1) }}">&larr; Anterior</a>
+        {% endif %}
+        {% for n in range(1, total_paginas + 1) %}
+          <a href="{{ url_for('pedidos', aba='historico', mes=mes, pagina=n) }}"
+             class="{% if n == pagina %}ativo{% endif %}" {% if n == pagina %}aria-current="page"{% endif %}>{{ n }}</a>
+        {% endfor %}
+        {% if pagina < total_paginas %}
+          <a href="{{ url_for('pedidos', aba='historico', mes=mes, pagina=pagina + 1) }}">Próxima &rarr;</a>
+        {% endif %}
+      </nav>
+    {% endif %}
   {% else %}
-    <p class="vazio">Nenhum pedido ainda.</p>
+    <p class="vazio">{{ 'Nenhum pedido pendente.' if aba == 'pendentes' else 'Nenhum pedido finalizado ainda.' }}</p>
   {% endif %}
 {% endblock %}

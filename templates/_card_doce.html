@@ -3,6 +3,8 @@
 <article class="card-doce {% if p['estoque'] <= 0 %}esgotado{% endif %}">
   <a class="card-img" href="{{ url_for('loja_produto', id_doce=p['id']) }}">
     {% if p['estoque'] <= 0 %}<span class="selo-esgotado">Esgotado</span>{% endif %}
+    {# so na secao "Mais vendidos": a posicao do doce (1o, 2o, 3o...) #}
+    {% if ranking is defined %}<span class="selo-ranking">{{ ranking }}º</span>{% endif %}
     {% if p['imagem'] %}
       <img src="{{ url_for('static', filename='uploads/' ~ p['imagem']) }}" alt="{{ p['nome'] }}">
     {% else %}

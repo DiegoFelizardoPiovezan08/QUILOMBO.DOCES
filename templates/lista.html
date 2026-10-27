@@ -1,4 +1,4 @@
-<!-- aba lista -->
+<!-- aba doces (lista de doces cadastrados, com barra de pesquisa) -->
 {% extends "base.html" %}
 
 {% block titulo %}Doces cadastrados{% endblock %}
@@ -18,9 +18,21 @@
     <a class="botao botao-secundario" href="{{ url_for('categorias') }}">+ Nova categoria</a>
   </p>
 
+  <!-- barra de pesquisa: filtra a lista pelo nome do doce -->
+  <form class="busca-admin" method="get" action="{{ url_for('listar') }}">
+    <input type="text" name="termo" value="{{ termo }}" placeholder="Pesquisar um doce pelo nome..."
+           aria-label="Pesquisar doce">
+    <button type="submit">Pesquisar</button>
+    {% if termo %}<a class="limpar-busca" href="{{ url_for('listar') }}">Limpar</a>{% endif %}
+  </form>
+
   <!-- mostra os doces cadastrados no banco de dados -->
   {% if doces %}
-    <p>{{ doces|length }} registro(s) no banco.</p>
+    {% if termo %}
+      <p>{{ doces|length }} resultado(s) para "{{ termo }}".</p>
+    {% else %}
+      <p>{{ doces|length }} registro(s) no banco.</p>
+    {% endif %}
     <table>
       <tr>
         <th>Foto</th>
@@ -65,6 +77,9 @@
       </tr>
       {% endfor %}
     </table>
+  {% elif termo %}
+  <!-- pesquisou e nao achou nada -->
+    <p class="vazio">Nenhum doce encontrado com "{{ termo }}".</p>
   {% else %}
   <!--se nao tiver nenhum doce cadastrado ainda -->
     <p class="vazio">Nenhum doce cadastrado ainda.</p>

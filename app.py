@@ -4,6 +4,7 @@
 
 import json
 import os
+import re
 import uuid
 from datetime import date, datetime
 
@@ -120,17 +121,21 @@ def apagar_imagem(nome):
 
 @app.route("/")
 def listar():
-    """Pagina inicial: todos os doces cadastrados."""
+    """Aba Doces: todos os doces cadastrados, ou so os que batem com a
+    busca da barra de pesquisa (/?termo=brigadeiro)."""
+    termo = request.args.get("termo", "").strip()
+
     conn = conectar_banco()
-        # LEFT JOIN: traz junto o nome da categoria (vazio se o doce nao tiver)
+    # LEFT JOIN: traz junto o nome da categoria (vazio se o doce nao tiver)
     doces = conn.execute(
         'SELECT doces.*, categorias.nome AS categoria FROM doces '
         'LEFT JOIN categorias ON categorias.id = doces.categoria_id '
-        'ORDER BY doces.nome').fetchall()
+        'WHERE LOWER(doces.nome) LIKE ? '
+        'ORDER BY doces.nome', (f'%{termo.lower()}%',)).fetchall()
     conn.close()
 
     #a mensagem de sucesso chega pela URL, apos o redirect
-    return render_template("lista.html", doces=doces,
+    return render_template("lista.html", doces=doces, termo=termo,
                            msg=request.args.get("msg", ""))
 
 
@@ -151,19 +156,9 @@ def detalhe(id_doce):
 
 @app.route("/buscar")
 def buscar():
-    """Busca por nome. O termo vem na URL: /buscar?termo=brigadeiro"""
-    termo = request.args.get("termo", "").strip().lower()
-
-    encontrados = []
-    if termo:
-        conn = conectar_banco()
-        encontrados = conn.execute(
-            'SELECT * FROM doces WHERE LOWER(nome) LIKE ? ORDER BY nome',
-            (f'%{termo}%',)
-        ).fetchall()
-        conn.close()
-
-    return render_template("busca.html", termo=termo, doces=encontrados)
+    """A busca agora fica na propria aba Doces; este endereco antigo
+    so leva para la (com o que a pessoa digitou)."""
+    return redirect(url_for("listar", termo=request.args.get("termo", "").strip()))
 
 
 
@@ -558,7 +553,7 @@ def montar_carrinho():
 
 @app.route("/loja")
 def loja():
-    """Pagina inicial da loja: carrossel e destaques."""
+    """Pagina inicial da loja: carrossel, destaques e mais vendidos."""
     conn = conectar_banco()
     # cada foto vira {"arquivo": caminho dentro de static, "legenda": texto}
     slides = [{"arquivo": "uploads/" + s["imagem"], "legenda": s["legenda"]}
@@ -566,6 +561,7 @@ def loja():
         # so os doces marcados como destaque (todos continuam na aba Produtos)
     doces = conn.execute(
         'SELECT * FROM doces WHERE destaque = 1 ORDER BY nome').fetchall()
+    vendidos = mais_vendidos(conn)
     conn.close()
 
     # nenhuma foto cadastrada na aba Carrossel: usa as fotos de static/img
@@ -576,7 +572,48 @@ def loja():
             if os.path.exists(os.path.join(app.static_folder, arquivo)):
                 slides.append({"arquivo": arquivo, "legenda": ""})
 
-    return render_template("loja.html", slides=slides, doces=doces)
+    return render_template("loja.html", slides=slides, doces=doces,
+                           vendidos=vendidos)
+
+
+def mais_vendidos(conn, quantos=4):
+    """Os doces que mais venderam, do 1o lugar para baixo.
+
+    So contam os pedidos PAGOS (aguardando e cancelados nao entram).
+    Cada pedido guarda {id do doce: quantidade} em itens_json; aqui somamos
+    as quantidades de todos os pedidos pagos, doce por doce."""
+    # nome do doce (minusculo) -> id, para ler os pedidos antigos
+    ids_por_nome = {d["nome"].lower(): d["id"]
+                    for d in conn.execute('SELECT id, nome FROM doces')}
+
+    total_por_doce = {}
+    for pedido in conn.execute(
+            "SELECT itens, itens_json FROM pedidos WHERE status = 'pago'"):
+        if pedido["itens_json"]:
+            itens = {int(i): q for i, q in json.loads(pedido["itens_json"]).items()}
+        else:
+            # pedidos antigos (de antes do estoque) nao tem itens_json:
+            # le o texto "4x Doce De Caju (R$ 60,00)" linha por linha
+            itens = {}
+            for linha in pedido["itens"].splitlines():
+                achou = re.match(r"(\d+)x (.+) \(R\$", linha.strip())
+                if achou and achou.group(2).lower() in ids_por_nome:
+                    id_doce = ids_por_nome[achou.group(2).lower()]
+                    itens[id_doce] = itens.get(id_doce, 0) + int(achou.group(1))
+
+        for id_doce, qtd in itens.items():
+            total_por_doce[id_doce] = total_por_doce.get(id_doce, 0) + qtd
+
+    # busca os doces que ainda existem e ordena: mais unidades vendidas
+    # primeiro; empate, pelo nome
+    doces = []
+    for id_doce, total in total_por_doce.items():
+        doce = conn.execute('SELECT * FROM doces WHERE id = ?', (id_doce,)).fetchone()
+        if doce is not None:
+            doces.append((total, doce))
+    doces.sort(key=lambda par: (-par[0], par[1]["nome"]))
+
+    return [doce for total, doce in doces[:quantos]]
 
 
 @app.route("/loja/produtos")
@@ -1110,22 +1147,87 @@ def sobre():
 
 # ----------------------------------------------------------- PEDIDOS (ADMIN)
 
+MESES = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho",
+         "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+POR_PAGINA = 10     # pedidos por pagina no historico
+
+
 @app.route("/pedidos")
 def pedidos():
-    """Aba Pedidos: primeiro os que esperam conferencia, depois os mais novos."""
+    """Aba Pedidos, com duas abas:
+    - pendentes: esperando o Pix (primeiro os que o cliente diz que pagou);
+    - historico: pagos e cancelados, escolhendo o mes/ano no select e
+      dividido em paginas de 10 pedidos
+      (/pedidos?aba=historico&mes=10/2026&pagina=2)."""
+    aba = request.args.get("aba", "pendentes")
+    mes = request.args.get("mes", "")
+    pagina = request.args.get("pagina", "1")
+    pagina = int(pagina) if pagina.isdigit() and int(pagina) > 0 else 1
+    total_paginas = 1
+    qtd_pagos = 0
+    total_pago = 0
     conn = conectar_banco()
-    lista = conn.execute(
-        "SELECT * FROM pedidos ORDER BY "
-        "CASE status WHEN 'informado' THEN 0 WHEN 'aguardando' THEN 1 ELSE 2 END, "
-                "id DESC").fetchall()
+
+    # quantos pendentes tem (aparece no botao da aba)
+    qtd_pendentes = conn.execute(
+        "SELECT COUNT(*) FROM pedidos "
+        "WHERE status IN ('aguardando', 'informado')").fetchone()[0]
+
+    meses = []
+    if aba == "historico":
+        # criado_em fica como "27/10/2026 10:51": o mes/ano e o pedaco "10/2026"
+        filtro = "WHERE status IN ('pago', 'cancelado') "
+        valores = ()
+        if mes:
+            filtro += "AND SUBSTR(criado_em, 4, 7) = ? "
+            valores = (mes,)
+
+        # resumo do mes inteiro (nao so da pagina): quanto foi vendido
+        qtd_total, qtd_pagos, total_pago = conn.execute(
+            "SELECT COUNT(*), "
+            "SUM(CASE WHEN status = 'pago' THEN 1 ELSE 0 END), "
+            "SUM(CASE WHEN status = 'pago' THEN total ELSE 0 END) "
+            "FROM pedidos " + filtro, valores).fetchone()
+
+        # paginas de 10 pedidos: a pagina 2 pula os 10 primeiros, e assim por diante
+        total_paginas = max(1, -(-qtd_total // POR_PAGINA))   # divisao arredondando p/ cima
+        pagina = min(pagina, total_paginas)
+        lista = conn.execute(
+            "SELECT * FROM pedidos " + filtro + "ORDER BY id DESC LIMIT ? OFFSET ?",
+            valores + (POR_PAGINA, (pagina - 1) * POR_PAGINA)).fetchall()
+
+        # uma opcao do select para cada mes que tem pedido finalizado (mais novo primeiro)
+        linhas = conn.execute(
+            "SELECT SUBSTR(criado_em, 4, 7) AS mes, COUNT(*) AS qtd FROM pedidos "
+            "WHERE status IN ('pago', 'cancelado') GROUP BY mes "
+            "ORDER BY SUBSTR(mes, 4, 4) DESC, SUBSTR(mes, 1, 2) DESC").fetchall()
+        for linha in linhas:
+            numero, ano = linha["mes"].split("/")
+            meses.append({"valor": linha["mes"], "qtd": linha["qtd"],
+                          "nome": f"{MESES[int(numero)]} {ano}"})
+    else:
+        aba = "pendentes"
+        lista = conn.execute(
+            "SELECT * FROM pedidos WHERE status IN ('aguardando', 'informado') "
+            "ORDER BY CASE status WHEN 'informado' THEN 0 ELSE 1 END, "
+            "id DESC").fetchall()
     conn.close()
 
-    return render_template("pedidos.html", pedidos=lista,
+    return render_template("pedidos.html", pedidos=lista, aba=aba, mes=mes,
+                           meses=meses, qtd_pendentes=qtd_pendentes,
+                           qtd_pagos=qtd_pagos or 0, total_pago=total_pago or 0,
+                           pagina=pagina, total_paginas=total_paginas,
                            msg=request.args.get("msg", ""))
+
+
 @app.route("/pedido/<int:id_pedido>/<acao>", methods=["POST"])
 def mudar_pedido(id_pedido, acao):
-    """Botoes "Confirmar pagamento" e "Cancelar" da aba Pedidos."""
-    novo_status = {"confirmar": "pago", "cancelar": "cancelado"}.get(acao)
+    """Botoes da aba Pedidos:
+    - confirmar: o Pix caiu, o pedido fica pago;
+    - cancelar: cancela o pedido (pendente ou ja pago);
+    - desfazer: o admin confirmou sem querer, o pedido volta para Pendentes."""
+    novo_status = {"confirmar": "pago", "cancelar": "cancelado",
+                   "desfazer": "informado"}.get(acao)
     if novo_status is None:
         return render_template("erro.html", mensagem="Acao invalida."), 404
 
@@ -1136,10 +1238,18 @@ def mudar_pedido(id_pedido, acao):
         conn.close()
         return render_template("erro.html", mensagem="Pedido nao encontrado."), 404
 
+    itens = json.loads(pedido["itens_json"]) if pedido["itens_json"] else {}
+
     # pagamento confirmado agora (e nao antes): tira os doces do estoque
-    if novo_status == "pago" and pedido["status"] != "pago" and pedido["itens_json"]:
-        for id_doce, qtd in json.loads(pedido["itens_json"]).items():
+    if novo_status == "pago" and pedido["status"] != "pago":
+        for id_doce, qtd in itens.items():
             conn.execute('UPDATE doces SET estoque = MAX(estoque - ?, 0) WHERE id = ?',
+                         (qtd, int(id_doce)))
+
+    # era pago e deixou de ser (cancelado ou desfeito): devolve os doces ao estoque
+    if pedido["status"] == "pago" and novo_status != "pago":
+        for id_doce, qtd in itens.items():
+            conn.execute('UPDATE doces SET estoque = estoque + ? WHERE id = ?',
                          (qtd, int(id_doce)))
 
     conn.execute('UPDATE pedidos SET status = ? WHERE id = ?',
@@ -1149,8 +1259,17 @@ def mudar_pedido(id_pedido, acao):
 
     if novo_status == "pago":
         msg = f"Pagamento do pedido {numero_pedido(id_pedido)} confirmado."
+    elif novo_status == "informado":
+        msg = f"Confirmação do pedido {numero_pedido(id_pedido)} desfeita: ele voltou para Pendentes."
     else:
         msg = f"Pedido {numero_pedido(id_pedido)} cancelado."
+
+    # volta para a mesma aba (e o mesmo mes) de onde o botao foi clicado
+    aba = request.form.get("aba", "pendentes")
+    mes = request.form.get("mes", "")
+    pagina = request.form.get("pagina", "1")
+    if aba == "historico":
+        return redirect(url_for("pedidos", aba=aba, mes=mes, pagina=pagina, msg=msg))
     return redirect(url_for("pedidos", msg=msg))
 
 

@@ -99,8 +99,18 @@
     </div>
 
   {% else %}
-    <p class="vazio">Seu carrinho está vazio.</p>
-    <p class="centro"><a class="btn btn-principal" href="{{ url_for('loja_produtos') }}">Ver nossos doces</a></p>
+    <!-- carrinho vazio: caixa grande com o desenho do carrinho -->
+    <section class="carrinho-vazio">
+      <svg class="carrinho-vazio-icone" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M2.5 4H5l1.2 3"/>
+        <path d="M6.2 7H20.5l-2 7.3a1 1 0 0 1-1 .7H8.6a1 1 0 0 1-1-.8z"/>
+        <circle cx="9.5" cy="19.5" r="1.6"/>
+        <circle cx="17" cy="19.5" r="1.6"/>
+      </svg>
+      <h3>Seu carrinho está vazio</h3>
+      <p>Que tal escolher alguns doces com história?</p>
+      <a class="btn btn-principal btn-grande" href="{{ url_for('loja_produtos') }}">Ver nossos doces</a>
+    </section>
   {% endif %}
 
 {% endblock %}

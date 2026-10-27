@@ -21,8 +21,8 @@
       <img class="topo-ornamento direita" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
     </div>
 
-    <!-- menu (3 barras), conta do cliente e carrinho: so os desenhos -->
-    <div class="topo-conta">
+    <!-- linha de cima: menu (3 barras) na esquerda; conta e carrinho na direita -->
+    <div class="topo-barra">
       <!-- menu: ao clicar abre Inicio, Produtos, Eventos e Sobre -->
       <div class="menu-caixa">
         <button type="button" class="icone-link menu-botao" id="menu-botao"
@@ -33,37 +33,64 @@
         </button>
         <nav class="menu-gaveta" id="menu-loja" hidden>
           <a href="{{ url_for('loja') }}"
-             {% if request.endpoint == 'loja' %}class="ativo"{% endif %}>Início</a>
+             {% if request.endpoint == 'loja' %}class="ativo"{% endif %}>
+            <!-- casa -->
+            <svg class="menu-icone" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/>
+            </svg>
+            Início
+          </a>
           <a href="{{ url_for('loja_produtos') }}"
-             {% if request.endpoint in ('loja_produtos', 'loja_produto') %}class="ativo"{% endif %}>Produtos</a>
+             {% if request.endpoint in ('loja_produtos', 'loja_produto') %}class="ativo"{% endif %}>
+            <!-- sacola -->
+            <svg class="menu-icone" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 8h14l-1 12H6z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>
+            </svg>
+            Produtos
+          </a>
           <a href="{{ url_for('loja_eventos') }}"
-             {% if request.endpoint in ('loja_eventos', 'loja_evento') %}class="ativo"{% endif %}>Eventos</a>
+             {% if request.endpoint in ('loja_eventos', 'loja_evento') %}class="ativo"{% endif %}>
+            <!-- calendario -->
+            <svg class="menu-icone" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>
+            </svg>
+            Eventos
+          </a>
           <a href="{{ url_for('loja_sobre') }}"
-             {% if request.endpoint == 'loja_sobre' %}class="ativo"{% endif %}>Sobre</a>
+             {% if request.endpoint == 'loja_sobre' %}class="ativo"{% endif %}>
+            <!-- livro (nossa historia) -->
+            <svg class="menu-icone" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 6.5C10 5 7 4.5 4 5v13.5c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5z"/><path d="M12 6.5V20"/>
+            </svg>
+            Sobre
+          </a>
         </nav>
       </div>
 
-      <a class="icone-link {% if request.endpoint and request.endpoint.startswith('contas.') %}ativo{% endif %}"
-         href="{{ url_for('contas.minha_conta') }}"
-         aria-label="{{ 'Minha conta (' ~ cliente['nome'].split()[0] ~ ')' if cliente else 'Entrar' }}"
-         title="{{ 'Minha conta (' ~ cliente['nome'].split()[0] ~ ')' if cliente else 'Entrar' }}">
-        <!-- boneco: cabeca + ombros ("preencher" fica cheio ao passar o mouse) -->
-        <svg class="icone" viewBox="0 0 24 24" aria-hidden="true">
-          <circle class="preencher" cx="12" cy="8" r="4"/>
-          <path class="preencher" d="M4 21a8 8 0 0 1 16 0z"/>
-        </svg>
-      </a>
-      <a class="icone-link {% if request.endpoint == 'loja_carrinho' %}ativo{% endif %}"
-         href="{{ url_for('loja_carrinho') }}" aria-label="Carrinho" title="Carrinho">
-        <!-- carrinho: alca + cesta ("preencher" fica cheio ao passar o mouse) + rodas -->
-        <svg class="icone" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M2.5 4H5l1.2 3"/>
-          <path class="preencher" d="M6.2 7H20.5l-2 7.3a1 1 0 0 1-1 .7H8.6a1 1 0 0 1-1-.8z"/>
-          <circle class="roda" cx="9.5" cy="19.5" r="1.6"/>
-          <circle class="roda" cx="17" cy="19.5" r="1.6"/>
-        </svg>
-        {% if qtd_carrinho %}<span class="contador">{{ qtd_carrinho }}</span>{% endif %}
-      </a>
+      <!-- conta do cliente e carrinho: so os desenhos -->
+      <div class="topo-conta">
+        <a class="icone-link {% if request.endpoint and request.endpoint.startswith('contas.') %}ativo{% endif %}"
+           href="{{ url_for('contas.minha_conta') }}"
+           aria-label="{{ 'Minha conta (' ~ cliente['nome'].split()[0] ~ ')' if cliente else 'Entrar' }}"
+           title="{{ 'Minha conta (' ~ cliente['nome'].split()[0] ~ ')' if cliente else 'Entrar' }}">
+          <!-- boneco: cabeca + ombros ("preencher" fica cheio ao passar o mouse) -->
+          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true">
+            <circle class="preencher" cx="12" cy="8" r="4"/>
+            <path class="preencher" d="M4 21a8 8 0 0 1 16 0z"/>
+          </svg>
+        </a>
+        <a class="icone-link {% if request.endpoint == 'loja_carrinho' %}ativo{% endif %}"
+           href="{{ url_for('loja_carrinho') }}" aria-label="Carrinho" title="Carrinho">
+          <!-- carrinho: alca + cesta ("preencher" fica cheio ao passar o mouse) + rodas -->
+          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M2.5 4H5l1.2 3"/>
+            <path class="preencher" d="M6.2 7H20.5l-2 7.3a1 1 0 0 1-1 .7H8.6a1 1 0 0 1-1-.8z"/>
+            <circle class="roda" cx="9.5" cy="19.5" r="1.6"/>
+            <circle class="roda" cx="17" cy="19.5" r="1.6"/>
+          </svg>
+          {% if qtd_carrinho %}<span class="contador">{{ qtd_carrinho }}</span>{% endif %}
+        </a>
+      </div>
     </div>
 
     <!-- logo + "Quilombo Doces", no meio -->

@@ -85,10 +85,6 @@ h3 { margin: 0; }
 a { text-decoration: none; }
 
 /* ---------- topo ----------
-   igual ao do administrador: logo no meio, menu em abas embaixo.
-   Na loja, "Entrar" e "Carrinho" ficam no canto de cima. */
-
-/* ---------- topo ----------
    logo no meio; no canto de cima, o menu (3 barras), a conta e o carrinho */
 
 .topo {
@@ -164,16 +160,21 @@ a { text-decoration: none; }
   color: var(--ouro);
 }
 
-/* conta e carrinho no canto de cima, a direita: so os desenhos,
-   sem contorno, na mesma altura do meio do logo e fora dos ornamentos */
+/* linha de cima: no computador ela "some" e cada lado se posiciona sozinho:
+   menu (3 barras) na esquerda e conta + carrinho na direita, na altura do
+   meio do logo e logo depois dos ornamentos dos cantos */
+.topo-barra { position: static; }
+
+.menu-caixa,
 .topo-conta {
   position: absolute;
   top: 37px;                 /* mesma altura do meio do logo */
-  right: 320px;              /* fica antes do ornamento do canto (300px) */
   z-index: 1;
   display: flex;
   gap: 6px;
 }
+.menu-caixa { left: 320px; }   /* logo depois do ornamento da esquerda (300px) */
+.topo-conta { right: 320px; }  /* logo antes do ornamento da direita (300px) */
 
 .icone-link {
   position: relative;
@@ -220,7 +221,6 @@ a { text-decoration: none; }
 }
 
 /* menu das 3 barras: botao igual aos desenhos da conta e do carrinho */
-.menu-caixa { position: relative; }
 .menu-botao {
   border: none;
   background: none;
@@ -228,6 +228,10 @@ a { text-decoration: none; }
   cursor: pointer;
 }
 .menu-botao .icone { stroke-width: 2.2; }
+
+/* contorno de foco (navegacao pelo teclado) na cor da marca */
+.icone-link:focus { outline: none; }
+.icone-link:focus-visible { outline: 2px solid var(--ouro); outline-offset: 2px; }
 
 /* lista que abre embaixo do botao: Inicio, Produtos, Eventos, Sobre */
 .menu-gaveta {
@@ -237,7 +241,7 @@ a { text-decoration: none; }
   z-index: 20;
   display: flex;
   flex-direction: column;
-  min-width: 210px;
+  min-width: 230px;
   padding: 8px;
   background: var(--areia);
   border: 1px solid var(--borda);
@@ -246,11 +250,29 @@ a { text-decoration: none; }
 }
 .menu-gaveta[hidden] { display: none; }
 .menu-gaveta a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 12px 16px;
   border-radius: var(--raio);
   color: var(--raiz);
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+/* linha separando as opcoes (entre uma e outra) */
+.menu-gaveta a + a { border-top: 1px solid var(--borda); }
+
+/* simbolo de cada opcao: casa, sacola, calendario, livro */
+.menu-icone {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .menu-gaveta a:hover,
 .menu-gaveta a.ativo {
@@ -356,6 +378,14 @@ a { text-decoration: none; }
   text-align: center;
 }
 
+/* foto com link: a foto inteira e clicavel e leva para o produto */
+.slide-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  cursor: pointer;
+}
+
 /* faixa que aparece quando nenhuma foto foi cadastrada */
 .slide-padrao {
   display: flex;
@@ -406,6 +436,7 @@ a { text-decoration: none; }
   border: 2px solid var(--areia);
   border-radius: 50%;
   background: transparent;
+  box-shadow: 0 0 0 1px rgba(43, 26, 20, 0.55);   /* contorno escuro: aparece em banner claro */
   cursor: pointer;
 }
 .ponto.ativo { background: var(--ouro); border-color: var(--ouro); }
@@ -702,6 +733,32 @@ a { text-decoration: none; }
 
 /* ---------- carrinho ---------- */
 
+/* carrinho vazio: caixa grande no meio da pagina */
+.carrinho-vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 640px;
+  margin: 10px auto 0;
+  padding: 56px 32px;
+  background: var(--branco);
+  border-radius: var(--raio-grande);
+  box-shadow: var(--sombra);
+  text-align: center;
+}
+.carrinho-vazio-icone {
+  width: 96px;
+  height: 96px;
+  fill: none;
+  stroke: var(--terracota);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.carrinho-vazio h3 { font-size: 1.6rem; color: var(--raiz); }
+.carrinho-vazio p { margin: 0 0 10px; color: var(--texto-suave); font-size: 1.05rem; }
+
 .carrinho {
   display: grid;
   grid-template-columns: 1fr 320px;
@@ -900,7 +957,6 @@ a { text-decoration: none; }
 }
 .evento-info dt { font-weight: 700; color: var(--raiz); }
 .evento-info dd { margin: 0; color: var(--texto-suave); overflow-wrap: anywhere; }
-
 
 /* ---------- pagina Sobre (historia da loja) ----------
    uma foto em cima e o texto embaixo, direto no fundo da pagina */
@@ -1243,32 +1299,45 @@ a { text-decoration: none; }
 
 /* ---------- telas um pouco menores (notebook) ----------
    ornamentos menores para os desenhos de conta e carrinho caberem
-   entre o slogan e o ornamento */
+   entre o logo e o ornamento */
 @media (max-width: 1500px) {
   .topo-ornamento { width: 200px; }
+  .menu-caixa { left: 214px; }
   .topo-conta { right: 214px; }
 }
 
 /* ---------- telas medias (tablet) ----------
-   sem espaco do lado do logo: conta e carrinho ficam em cima dele */
+   sem espaco do lado do logo: a linha de cima fica em cima dele,
+   menu na esquerda e conta + carrinho na direita, entre os ornamentos */
 @media (max-width: 1300px) {
-  .topo-conta { position: static; justify-content: center; margin-bottom: 8px; }
+  .topo-barra {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 190px;
+    margin-bottom: 8px;
+  }
+  .menu-caixa,
+  .topo-conta { position: relative; top: auto; left: auto; right: auto; }
 }
 
 /* ---------- celular ---------- */
 
 @media (max-width: 760px) {
-  /* topo no celular: Entrar e carrinho em cima do logo, tudo menor */
+  /* topo no celular: menu, conta e carrinho em cima do logo, tudo menor */
   .topo { padding: 12px 12px 0; }
-  .topo-conta { position: static; justify-content: center; margin-bottom: 6px; }
+  .topo-barra { padding: 0 90px; margin-bottom: 4px; }
   .icone-link { width: 48px; height: 48px; }
   .icone { width: 30px; height: 30px; }
-  .topo-ornamento { width: 130px; }
+  .topo-ornamento { width: 100px; }
+  .carrinho-vazio { padding: 40px 20px; }
   .logo-img { width: 46px; height: 46px; }
   .logo-nome { font-size: 1.6rem; }
   .logo-sub { font-size: 1rem; }
 
-  .rodape-ornamento { width: 130px; }
+  .rodape-ornamento { width: 100px; }
 
   .carrossel-slides { height: 240px; }
   .slide figcaption { font-size: 1.2rem; padding: 40px 16px 40px; }
@@ -1282,7 +1351,7 @@ a { text-decoration: none; }
 
   /* produtos no celular: foto menor na esquerda */
   .grade-lista { grid-template-columns: 1fr; }
-    .grade-lista .card-img { flex-basis: 110px; width: 110px; height: 110px; font-size: 3rem; }
+  .grade-lista .card-img { flex-basis: 110px; width: 110px; height: 110px; font-size: 3rem; }
   .grade-lista .card-corpo { padding: 14px 16px; }
 
   .carrinho { grid-template-columns: 1fr; }
@@ -1305,4 +1374,22 @@ a { text-decoration: none; }
   }
   .item-img { width: 60px; height: 60px; }
   .item-subtotal { text-align: left; }
+}
+
+/* posicao na secao "Mais vendidos" (1o, 2o, 3o...), no canto direito da foto */
+.card-img { position: relative; }
+.selo-ranking {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  min-width: 42px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ouro);
+  color: var(--raiz);
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
