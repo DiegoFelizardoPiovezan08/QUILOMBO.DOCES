@@ -5,6 +5,7 @@
 import json
 import os
 import re
+import secrets
 import uuid
 from datetime import date, datetime
 
@@ -13,6 +14,7 @@ import qrcode.image.svg
 
 from flask import (Flask, request, render_template, redirect, url_for,
                    session, flash)
+from werkzeug.security import check_password_hash
 from cadastro_sqlite import conectar_banco, validar_preco
 from contas import contas, cliente_atual, endereco_completo
 from urllib.parse import quote
@@ -22,7 +24,27 @@ app = Flask(__name__)
 app.register_blueprint(contas)      # paginas de conta do cliente (contas.py)
 
 
-app.secret_key = "Neymar"
+def ler_chave_secreta():
+    """Chave secreta do site: e ela que assina o "cookie" de login (de clientes
+    e do admin). Se alguem souber a chave, consegue fingir ser outra pessoa,
+    entao ela precisa ser longa, aleatoria e NAO pode ficar escrita no codigo.
+
+    - no servidor: use a variavel de ambiente SECRET_KEY;
+    - no seu computador: na primeira vez, o site sorteia uma chave e guarda
+      em dados/chave_secreta.txt (esse arquivo nao vai para o GitHub)."""
+    if os.environ.get("SECRET_KEY"):
+        return os.environ["SECRET_KEY"]
+
+    caminho = os.path.join("dados", "chave_secreta.txt")
+    if not os.path.exists(caminho):
+        os.makedirs("dados", exist_ok=True)
+        with open(caminho, "w") as arquivo:
+            arquivo.write(secrets.token_hex(32))    # 64 letras/numeros sorteados
+    with open(caminho) as arquivo:
+        return arquivo.read().strip()
+
+
+app.secret_key = ler_chave_secreta()
 WHATSAPP = "5511998325340"  # seu número com DDI + DDD
 
 # --------------------------------------------------------------- PIX
@@ -547,6 +569,79 @@ def montar_carrinho():
     link = f"https://wa.me/{WHATSAPP}?text={quote(chr(10).join(linhas))}"
 
     return itens, total, link
+
+
+# ----------------------------------------------------------- LOGIN DO ADMIN
+# Toda a area do administrador (doces, estoque, pedidos...) so abre para quem
+# entrou com usuario e senha. A loja (/loja...) e as contas dos clientes
+# (/conta...) continuam abertas para todo mundo.
+
+# paginas que nao pedem o login do admin (alem da loja e das contas)
+PAGINAS_PUBLICAS = ("static", "admin_entrar")
+
+
+@app.before_request
+def proteger_admin():
+    """Roda antes de toda pagina: se for do admin e ninguem entrou, manda
+    para a tela de login (e depois volta para a pagina que a pessoa queria)."""
+    endpoint = request.endpoint or ""
+    if (not endpoint                            # pagina que nao existe: mostra o erro 404
+            or endpoint.startswith("loja")
+            or endpoint.startswith("contas.")
+            or endpoint in PAGINAS_PUBLICAS
+            or session.get("admin_id")):
+        return None
+
+    # quem abre o endereco principal do site (/) sem ser admin vai para a loja
+    if endpoint == "listar":
+        return redirect(url_for("loja"))
+    # depois do login volta para a pagina pedida (se era um botao/POST, so entra)
+    proximo = request.path if request.method == "GET" else ""
+    return redirect(url_for("admin_entrar", proximo=proximo))
+
+
+@app.route("/admin", methods=["GET", "POST"])
+def admin_entrar():
+    """Tela de login do administrador: /admin"""
+    if session.get("admin_id"):
+        return redirect(url_for("listar"))
+
+    # para onde voltar depois de entrar (so enderecos do proprio site)
+    proximo = request.values.get("proximo", "")
+    if not proximo.startswith("/") or proximo.startswith("//"):
+        proximo = url_for("listar")
+
+    conn = conectar_banco()
+    tem_admin = conn.execute('SELECT COUNT(*) FROM admins').fetchone()[0] > 0
+    erro = ""
+    usuario = ""
+
+    if request.method == "POST":
+        usuario = request.form.get("usuario", "").strip()
+        senha = request.form.get("senha", "")
+        admin = conn.execute('SELECT * FROM admins WHERE usuario = ?',
+                             (usuario,)).fetchone()
+        # a senha digitada e comparada com a guardada embaralhada (hash)
+        if admin and check_password_hash(admin["senha_hash"], senha):
+            conn.close()
+            session["admin_id"] = admin["id"]
+            session["admin_usuario"] = admin["usuario"]
+            return redirect(proximo)
+        # mesma mensagem para usuario ou senha errados: nao entrega qual errou
+        erro = "Usuário ou senha incorretos."
+
+    conn.close()
+    return render_template("admin_entrar.html", erro=erro, usuario=usuario,
+                           proximo=proximo, tem_admin=tem_admin)
+
+
+@app.route("/admin/sair")
+def admin_sair():
+    """Botao "Sair" do admin: esquece o login (o carrinho e o login de
+    cliente, se houver, continuam)."""
+    session.pop("admin_id", None)
+    session.pop("admin_usuario", None)
+    return redirect(url_for("admin_entrar"))
 
 
 # ----------------------------------------------------------- VITRINE

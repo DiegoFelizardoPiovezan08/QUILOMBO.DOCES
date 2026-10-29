@@ -1,0 +1,6 @@
+# chave secreta do site: cada computador/servidor tem a sua, nunca vai para o GitHub
+dados/chave_secreta.txt
+
+# banco de dados: tem CPF, endereco e telefone dos clientes e as senhas
+# dos admins. Cada computador/servidor fica com o seu; nunca vai para o GitHub
+dados/cadastro.db

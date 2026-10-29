@@ -274,8 +274,8 @@ a { text-decoration: none; }
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.menu-gaveta a:hover,
-.menu-gaveta a.ativo {
+/* so fica laranja quando passa o mouse (a pagina atual nao fica marcada) */
+.menu-gaveta a:hover {
   background: var(--terracota);
   color: var(--branco);
 }
@@ -658,6 +658,24 @@ a { text-decoration: none; }
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+/* posicao na secao "Mais vendidos" (1o, 2o, 3o...), no canto direito da foto */
+.selo-ranking {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  min-width: 42px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ouro);
+  color: var(--raiz);
+  font-family: var(--fonte-texto);
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .esgotado .card-img img,
@@ -1307,35 +1325,42 @@ a { text-decoration: none; }
 }
 
 /* ---------- telas medias (tablet) ----------
-   sem espaco do lado do logo: a linha de cima fica em cima dele,
-   menu na esquerda e conta + carrinho na direita, entre os ornamentos */
+   menu na esquerda e conta + carrinho na direita continuam na mesma
+   altura do logo; os ornamentos diminuem para os desenhos caberem */
 @media (max-width: 1300px) {
-  .topo-barra {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 190px;
-    margin-bottom: 8px;
-  }
+  .topo-ornamento { width: 160px; }
+  .menu-caixa { left: 170px; }
+  .topo-conta { right: 170px; }
+}
+
+@media (max-width: 1000px) {
+  .topo-ornamento { width: 110px; }
   .menu-caixa,
-  .topo-conta { position: relative; top: auto; left: auto; right: auto; }
+  .topo-conta { top: 41px; }            /* icones menores: desce 4px p/ ficar no meio do logo */
+  .menu-caixa { left: 116px; }
+  .topo-conta { right: 116px; }
+  .icone-link { width: 48px; height: 48px; }
 }
 
 /* ---------- celular ---------- */
 
 @media (max-width: 760px) {
-  /* topo no celular: menu, conta e carrinho em cima do logo, tudo menor */
-  .topo { padding: 12px 12px 0; }
-  .topo-barra { padding: 0 90px; margin-bottom: 4px; }
-  .icone-link { width: 48px; height: 48px; }
-  .icone { width: 30px; height: 30px; }
-  .topo-ornamento { width: 100px; }
+  /* topo no celular: menu no canto esquerdo e conta + carrinho no canto
+     direito, na mesma linha do logo (logo e desenhos menores para caber) */
+  .topo { padding: 12px 12px 4px; }
+  .topo-logo { margin-bottom: 8px; }
+  .menu-caixa,
+  .topo-conta { top: 12px; }            /* meio do logo */
+  .menu-caixa { left: 6px; }
+  .topo-conta { right: 6px; gap: 0; }
+  .icone-link { width: 40px; height: 40px; }
+  .icone { width: 26px; height: 26px; }
+  .topo-ornamento { width: 56px; }
   .carrinho-vazio { padding: 40px 20px; }
-  .logo-img { width: 46px; height: 46px; }
-  .logo-nome { font-size: 1.6rem; }
-  .logo-sub { font-size: 1rem; }
+  .logo { gap: 8px; }
+  .logo-img { width: 40px; height: 40px; }
+  .logo-nome { font-size: 1.35rem; }
+  .logo-sub { font-size: 0.85rem; }
 
   .rodape-ornamento { width: 100px; }
 
@@ -1349,10 +1374,27 @@ a { text-decoration: none; }
 
   .sobre-img { margin-bottom: 20px; }
 
-  /* produtos no celular: foto menor na esquerda */
-  .grade-lista { grid-template-columns: 1fr; }
-  .grade-lista .card-img { flex-basis: 110px; width: 110px; height: 110px; font-size: 3rem; }
-  .grade-lista .card-corpo { padding: 14px 16px; }
+  /* produtos no celular: 2 por linha, como no computador, com a foto
+     em cima e textos e botao um pouco menores para caber */
+  .grade,
+  .grade-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .grade-lista .card-doce { flex-direction: column; align-items: stretch; }
+  .grade-lista .card-img { flex: none; width: 100%; height: auto; margin: 0; border-radius: 0; }
+  .card-img { font-size: 3rem; }
+  .secao-cabecalho a { font-size: 0.85rem; }
+  .card-corpo,
+  .grade-lista .card-corpo { padding: 10px 10px 12px; gap: 4px; justify-content: flex-start; }
+  .card-corpo h3,
+  .grade-lista .card-corpo h3 { font-size: 0.95rem; }
+  .card-descricao { font-size: 0.8rem; }
+  .preco { font-size: 1rem; }
+  .card-corpo .btn { padding: 8px 6px; font-size: 0.78rem; }
+  .grade-lista .card-corpo form { margin-top: auto; }
+  .grade-lista .card-corpo form .btn { width: 100%; }
+  .selo-esgotado,
+  .selo-ranking { top: 8px; font-size: 0.72rem; padding: 3px 8px; min-width: 0; }
+  .selo-esgotado { left: 8px; }
+  .selo-ranking { right: 8px; }
 
   .carrinho { grid-template-columns: 1fr; }
   .pagamento { grid-template-columns: 1fr; }
@@ -1374,22 +1416,4 @@ a { text-decoration: none; }
   }
   .item-img { width: 60px; height: 60px; }
   .item-subtotal { text-align: left; }
-}
-
-/* posicao na secao "Mais vendidos" (1o, 2o, 3o...), no canto direito da foto */
-.card-img { position: relative; }
-.selo-ranking {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 1;
-  min-width: 42px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--ouro);
-  color: var(--raiz);
-  font-size: 0.95rem;
-  font-weight: 800;
-  text-align: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }

@@ -130,6 +130,17 @@ def conectar_banco():
             )
         ''')
 
+    # administradores: quem pode entrar na area do admin. A senha fica
+    # guardada embaralhada (hash), nunca a senha de verdade.
+    # Para criar um admin, rode no terminal: python criar_admin.py
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS admins (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario     TEXT    NOT NULL UNIQUE,
+                senha_hash  TEXT    NOT NULL
+            )
+        ''')
+
     # coluna "categoria_id" em doces: de qual categoria e o doce (vazio = sem categoria)
     if "categoria_id" not in colunas:
         conn.execute("ALTER TABLE doces ADD COLUMN categoria_id INTEGER")
