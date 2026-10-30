@@ -1,0 +1,34 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}Esqueci minha senha{% endblock %}
+
+{% block conteudo %}
+
+  <p class="voltar"><a href="{{ url_for('contas.entrar') }}">&larr; Voltar para o login</a></p>
+
+  <h2 class="secao-titulo">Esqueci minha senha</h2>
+
+  <div class="cartao formulario formulario-estreito">
+    {% if enviado %}
+      <!-- mesma mensagem tendo conta ou nao (ninguem descobre quais e-mails existem) -->
+      <h3>Confira seu e-mail</h3>
+      <p>Se existir uma conta com <b>{{ email }}</b>, enviamos um link para criar uma
+         senha nova. Ele vale por <b>1 hora</b>.</p>
+      <p class="dica">Não chegou? Olhe a caixa de spam ou
+        <a href="{{ url_for('contas.esqueci_senha') }}">peça outro link</a>.</p>
+    {% else %}
+      <form class="formulario" method="post" action="{{ url_for('contas.esqueci_senha') }}">
+        <p>Digite o e-mail da sua conta. Vamos mandar um link para você criar uma senha nova.</p>
+
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" value="{{ email }}"
+               placeholder="maria@gmail.com" autocomplete="email" required autofocus>
+
+        <button type="submit" class="btn btn-principal btn-grande">Enviar link</button>
+      </form>
+      <p class="dica">Sua conta não tem e-mail? Fale com a gente pelo
+        <a href="https://wa.me/{{ whatsapp }}" target="_blank">WhatsApp</a>.</p>
+    {% endif %}
+  </div>
+
+{% endblock %}

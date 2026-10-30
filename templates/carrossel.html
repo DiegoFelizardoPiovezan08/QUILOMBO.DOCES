@@ -13,10 +13,17 @@
   <!-- formulario para enviar uma foto nova -->
   <form method="post" action="{{ url_for('carrossel') }}" enctype="multipart/form-data" class="caixa-envio">
     <p>
-      <label for="imagem">Nova foto</label>
+      <label for="imagem">Nova foto (computador)</label>
       <input type="file" id="imagem" name="imagem" accept="image/*">
-      <span class="dica">Use fotos deitadas (paisagem), por exemplo 1600 x 600 px. Até 5 MB.</span>
+      <span class="dica">Deitada, no formato do banner: 2120 x 760 px (ou 1060 x 380). Até 5 MB.</span>
       {% if erros.get('imagem') %}<span class="erro">{{ erros['imagem'] }}</span>{% endif %}
+    </p>
+    <p>
+      <label for="imagem_celular">Versão para celular (opcional)</label>
+      <input type="file" id="imagem_celular" name="imagem_celular" accept="image/*">
+      <span class="dica">Quadrada: 1080 x 1080 px. No celular, o carrossel fica grande, ocupando a largura da tela.
+        Ele só fica quadrado quando <b>todas</b> as fotos têm a versão para celular.</span>
+      {% if erros.get('imagem_celular') %}<span class="erro">{{ erros['imagem_celular'] }}</span>{% endif %}
     </p>
     <p>
       <label for="legenda">Legenda (opcional)</label>
@@ -39,6 +46,18 @@
               <button type="submit" class="link-perigo">Remover</button>
             </form>
           </figcaption>
+          <!-- versao quadrada para o celular: mostra a atual e deixa trocar -->
+          <form class="foto-celular" method="post" enctype="multipart/form-data"
+                action="{{ url_for('foto_celular_slide', id_slide=s['id']) }}">
+            {% if s['imagem_celular'] %}
+              <img src="{{ url_for('static', filename='uploads/' ~ s['imagem_celular']) }}" alt="Versão para celular">
+              <span class="dica">&#10003; Tem versão para celular. Trocar:</span>
+            {% else %}
+              <span class="dica">Sem versão para celular. Enviar (1080 x 1080):</span>
+            {% endif %}
+            <input type="file" name="imagem_celular" accept="image/*" aria-label="Foto para celular">
+            <button type="submit" class="botao">Salvar</button>
+          </form>
         </figure>
       {% endfor %}
     </div>

@@ -85,6 +85,65 @@ def conectar_banco():
     if "numero" not in colunas:
         conn.execute("ALTER TABLE clientes ADD COLUMN numero TEXT")
 
+    # FRETE: tabela de precos por distancia (cadastrada na aba Frete do admin).
+    # Cada linha vale "ate X km" (ex.: ate 5 km = R$ 8,00; ate 10 km = R$ 12,00).
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS frete_km (
+                id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                ate_km  REAL    NOT NULL,
+                preco   REAL    NOT NULL
+            )
+        ''')
+
+    # localizacao (latitude/longitude) de cada CEP ja consultado: assim o site
+    # so pergunta para a internet uma vez por CEP (veja geolocalizacao.py)
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS cep_coordenadas (
+                cep  TEXT PRIMARY KEY,
+                lat  REAL NOT NULL,
+                lon  REAL NOT NULL
+            )
+        ''')
+
+    # configuracoes da loja (chave -> valor), ex.: CEP e localizacao da loja,
+    # prazo de entrega
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS configuracoes (
+                chave  TEXT PRIMARY KEY,
+                valor  TEXT
+            )
+        ''')
+
+    # pedidos: a entrega ("Entrega - 7,2 km (1 a 2 dias)") e quanto o cliente
+    # pagou de frete (o total do pedido ja inclui o frete)
+    colunas_pedidos = [c["name"] for c in conn.execute("PRAGMA table_info(pedidos)")]
+    if "entrega" not in colunas_pedidos:
+        conn.execute("ALTER TABLE pedidos ADD COLUMN entrega TEXT")
+    if "frete" not in colunas_pedidos:
+        conn.execute("ALTER TABLE pedidos ADD COLUMN frete REAL NOT NULL DEFAULT 0")
+
+    # coluna "imagem_celular" no carrossel: versao quadrada da foto, mostrada
+    # so no celular (vazio = o celular mostra a foto normal, menor)
+    colunas_carrossel = [c["name"] for c in conn.execute("PRAGMA table_info(carrossel)")]
+    if "imagem_celular" not in colunas_carrossel:
+        conn.execute("ALTER TABLE carrossel ADD COLUMN imagem_celular TEXT")
+
+    # coluna "email" em clientes: usada no "Esqueci minha senha"
+    if "email" not in colunas:
+        conn.execute("ALTER TABLE clientes ADD COLUMN email TEXT")
+
+    # pedidos de "Esqueci minha senha": cada link enviado por e-mail vale
+    # 1 hora e so pode ser usado uma vez. Guarda so o hash do codigo do link.
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS redefinicoes_senha (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                cliente_id  INTEGER NOT NULL,
+                token_hash  TEXT    NOT NULL,
+                expira_em   REAL    NOT NULL,
+                usado       INTEGER NOT NULL DEFAULT 0
+            )
+        ''')
+
 
     # pedidos: de qual cliente e, e o CPF/endereco no momento da compra
     colunas = [c["name"] for c in conn.execute("PRAGMA table_info(pedidos)")]

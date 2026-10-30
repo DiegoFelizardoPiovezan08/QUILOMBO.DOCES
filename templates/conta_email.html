@@ -1,0 +1,30 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}Informe seu e-mail{% endblock %}
+
+{% block conteudo %}
+
+  <h2 class="secao-titulo">Falta só o seu e-mail</h2>
+
+  <!-- contas antigas nao tinham e-mail: agora ele e obrigatorio -->
+  <form class="cartao formulario formulario-estreito" method="post" action="{{ url_for('contas.informar_email') }}">
+    <input type="hidden" name="proximo" value="{{ proximo }}">
+
+    <p>Olá, {{ cliente['nome'].split()[0] }}! Agora a sua conta precisa de um e-mail.
+       É para ele que mandamos o link se você esquecer a senha.</p>
+
+    {% if erro %}<p class="erro-caixa">{{ erro }}</p>{% endif %}
+
+    <label for="email">E-mail <span class="obrigatorio">*</span></label>
+    <input type="email" id="email" name="email" value="{{ email }}"
+           placeholder="maria@gmail.com" autocomplete="email" required autofocus>
+
+    <button type="submit" class="btn btn-principal btn-grande">Salvar e continuar</button>
+  </form>
+
+  <!-- sair da conta (se a pessoa nao quiser informar agora) -->
+  <form class="centro" method="post" action="{{ url_for('contas.sair') }}">
+    <button type="submit" class="link-botao">Agora não, sair da conta</button>
+  </form>
+
+{% endblock %}

@@ -4,6 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}Nossos doces{% endblock %} | Quilombo Doces</title>
+  <!-- descricao que o Google mostra embaixo do titulo -->
+  <meta name="description" content="{% block descricao %}Quilombo Doces: doces artesanais feitos com carinho, em Osasco/SP. Peça pela loja online e pague com Pix.{% endblock %}">
+  <meta name="theme-color" content="#4a2a1e">
+
+  <!-- previa do link quando alguem compartilha no WhatsApp, Instagram, Facebook... -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Quilombo Doces">
+  <meta property="og:title" content="{{ self.titulo() }} | Quilombo Doces">
+  <meta property="og:description" content="{{ self.descricao() }}">
+  <meta property="og:image" content="{% block imagem_compartilhar %}{{ url_for('static', filename='img/compartilhar.jpg', _external=True) }}{% endblock %}">
+  <meta property="og:url" content="{{ request.url }}">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- icone na aba do navegador (e na tela inicial do celular) -->
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='img/favicon-192.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
   <!-- fontes do logo: Poppins (textos) e Kaushan Script ("Quilombo") -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

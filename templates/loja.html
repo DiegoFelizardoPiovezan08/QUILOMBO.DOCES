@@ -6,15 +6,25 @@
 
   <!-- CARROSSEL: fotos cadastradas no administrador (aba "Carrossel").
        Sem nenhuma cadastrada, usa static/img/carrossel-1.jpg ate carrossel-4.jpg -->
-  <section class="carrossel" aria-roledescription="carrossel" aria-label="Fotos da Quilombo Doces">
+  {# no celular o carrossel fica quadrado (e maior) quando todas as fotos
+     tem a versao quadrada; senao mostra o banner deitado, menor #}
+  {% set formato_celular = slides and (slides|selectattr('celular')|list|length == slides|length) %}
+  <section class="carrossel {% if formato_celular %}carrossel-quadrado{% endif %}"
+           aria-roledescription="carrossel" aria-label="Fotos da Quilombo Doces">
 
     <div class="carrossel-slides">
       {% for s in slides %}
         <!-- --foto: a mesma imagem, usada desfocada no fundo para preencher as laterais -->
         <figure class="slide {% if loop.first %}ativo{% endif %}"
         style="--foto: url('{{ url_for('static', filename=s['arquivo']) }}')">
-        <img src="{{ url_for('static', filename=s['arquivo']) }}"
-        alt="{{ s['legenda'] or 'Quilombo Doces' }}">
+        <picture>
+          {% if formato_celular %}
+            <!-- celular: a versao quadrada da foto -->
+            <source media="(max-width: 760px)" srcset="{{ url_for('static', filename=s['celular']) }}">
+          {% endif %}
+          <img src="{{ url_for('static', filename=s['arquivo']) }}"
+               alt="{{ s['legenda'] or 'Quilombo Doces' }}">
+        </picture>
           {% if s['legenda'] %}<figcaption>{{ s['legenda'] }}</figcaption>{% endif %}
         </figure>
       {% else %}

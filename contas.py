@@ -3,11 +3,17 @@
 # com os dados do cliente e o historico de pedidos.
 # Projeto: Quilombo Doces
 
+import hashlib
+import re
+import secrets
+import time
+
 from flask import (Blueprint, request, render_template, redirect, url_for,
                    session, flash)
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from cadastro_sqlite import conectar_banco
+from envio_email import enviar_email
 
 # "Blueprint" = um pedaco do site separado do app.py; e ligado la com
 # app.register_blueprint(contas). Nos templates: url_for('contas.entrar') etc.
@@ -76,9 +82,24 @@ def destino_seguro(proximo):
 
 def ler_cadastro():
     """Le os campos do formulario de cadastro e devolve um dicionario limpo."""
-    campos = ("nome", "cpf", "telefone", "endereco", "numero", "complemento",
-              "bairro", "cidade", "cep")
-    return {c: request.form.get(c, "").strip() for c in campos}
+    campos = ("nome", "cpf", "email", "telefone", "endereco", "numero",
+              "complemento", "bairro", "cidade", "cep")
+    dados = {c: request.form.get(c, "").strip() for c in campos}
+    dados["email"] = dados["email"].lower()
+    return dados
+
+
+def validar_email(email, conn, id_atual=None):
+    """Devolve a mensagem de erro do e-mail, ou "" se estiver tudo certo."""
+    # formato simples: algo@algo.algo (sem espacos)
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        return "Informe um e-mail válido (ex.: maria@gmail.com)."
+    existente = conn.execute(
+        'SELECT id FROM clientes WHERE LOWER(email) = ? AND id <> ?',
+        (email.lower(), id_atual or 0)).fetchone()
+    if existente:
+        return "Já existe uma conta com esse e-mail."
+    return ""
 
 
 def validar_cadastro(dados, conn, id_atual=None, senha_obrigatoria=True):
@@ -96,6 +117,10 @@ def validar_cadastro(dados, conn, id_atual=None, senha_obrigatoria=True):
             (so_numeros(dados["cpf"]), id_atual or 0)).fetchone()
         if existente:
             erros["cpf"] = "Ja existe uma conta com esse CPF. Tente entrar."
+
+    erro_email = validar_email(dados["email"], conn, id_atual)
+    if erro_email:
+        erros["email"] = erro_email
 
     if len(so_numeros(dados["telefone"])) < 10:
         erros["telefone"] = "Informe o WhatsApp com DDD (ex.: 11 99999-9999)."
@@ -185,9 +210,9 @@ def cadastro():
 
     cursor = conn.execute(
 
-        'INSERT INTO clientes (nome, cpf, telefone, endereco, numero, complemento, '
-        'bairro, cidade, cep, senha_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        (dados["nome"], so_numeros(dados["cpf"]), dados["telefone"],
+        'INSERT INTO clientes (nome, cpf, email, telefone, endereco, numero, complemento, '
+        'bairro, cidade, cep, senha_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        (dados["nome"], so_numeros(dados["cpf"]), dados["email"], dados["telefone"],
          dados["endereco"], dados["numero"], dados["complemento"], dados["bairro"],
          dados["cidade"], dados["cep"],
          generate_password_hash(request.form["senha"])))
@@ -225,9 +250,9 @@ def editar():
                                editando=True), 400
 
     conn.execute(
-        'UPDATE clientes SET nome = ?, cpf = ?, telefone = ?, endereco = ?, '
+        'UPDATE clientes SET nome = ?, cpf = ?, email = ?, telefone = ?, endereco = ?, '
         'numero = ?, complemento = ?, bairro = ?, cidade = ?, cep = ? WHERE id = ?',
-        (dados["nome"], so_numeros(dados["cpf"]), dados["telefone"],
+        (dados["nome"], so_numeros(dados["cpf"]), dados["email"], dados["telefone"],
          dados["endereco"], dados["numero"], dados["complemento"], dados["bairro"],
          dados["cidade"], dados["cep"], cliente["id"]))
     if request.form.get("senha"):
@@ -238,6 +263,141 @@ def editar():
 
     flash("Dados atualizados!")
     return redirect(destino_seguro(proximo))
+
+
+# --------------------------------------------------- E-MAIL OBRIGATORIO
+# Contas antigas (criadas antes do campo de e-mail) precisam informar o
+# e-mail antes de continuar comprando: sem ele nao da para recuperar a senha.
+
+@contas.before_app_request
+def exigir_email():
+    """Cliente logado sem e-mail: so libera a loja depois de informar."""
+    endpoint = request.endpoint or ""
+    if not (endpoint.startswith("loja") or endpoint.startswith("contas.")):
+        return None                         # area do admin, arquivos etc.
+    if endpoint in ("contas.informar_email", "contas.sair"):
+        return None
+    cliente = cliente_atual()
+    if cliente is not None and not cliente["email"]:
+        return redirect(url_for("contas.informar_email", proximo=request.full_path))
+    return None
+
+
+@contas.route("/conta/email", methods=["GET", "POST"])
+def informar_email():
+    """Aba que pede o e-mail de quem criou a conta antes de ele existir."""
+    cliente = cliente_atual()
+    if cliente is None:
+        return redirect(url_for("contas.entrar"))
+
+    proximo = request.values.get("proximo", "")
+    erro = ""
+    email = ""
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        conn = conectar_banco()
+        erro = validar_email(email, conn, id_atual=cliente["id"])
+        if not erro:
+            conn.execute('UPDATE clientes SET email = ? WHERE id = ?',
+                         (email, cliente["id"]))
+            conn.commit()
+        conn.close()
+        if not erro:
+            flash("E-mail salvo! Se esquecer a senha, é para ele que vamos mandar o link.")
+            return redirect(destino_seguro(proximo))
+
+    return render_template("conta_email.html", cliente=cliente, email=email,
+                           erro=erro, proximo=proximo)
+
+
+# --------------------------------------------------- ESQUECI MINHA SENHA
+# 1. a pessoa digita o e-mail da conta;
+# 2. o site manda um link secreto para esse e-mail (vale 1 hora, uma vez so);
+# 3. pelo link, ela escolhe uma senha nova.
+
+VALIDADE_LINK = 60 * 60          # 1 hora, em segundos
+
+
+def hash_token(token):
+    """O codigo do link nao fica salvo no banco, so o "hash" dele: mesmo que
+    alguem veja o banco, nao consegue montar o link."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+@contas.route("/conta/esqueci", methods=["GET", "POST"])
+def esqueci_senha():
+    """Pede o e-mail e manda o link para criar uma senha nova."""
+    if request.method == "GET":
+        return render_template("conta_esqueci.html", enviado=False, email="")
+
+    email = request.form.get("email", "").strip().lower()
+    conn = conectar_banco()
+    cliente = conn.execute('SELECT * FROM clientes WHERE LOWER(email) = ?',
+                           (email,)).fetchone()
+
+    if cliente is not None:
+        token = secrets.token_urlsafe(32)        # codigo secreto do link
+        # links antigos deste cliente deixam de valer
+        conn.execute('UPDATE redefinicoes_senha SET usado = 1 WHERE cliente_id = ?',
+                     (cliente["id"],))
+        conn.execute(
+            'INSERT INTO redefinicoes_senha (cliente_id, token_hash, expira_em) '
+            'VALUES (?, ?, ?)',
+            (cliente["id"], hash_token(token), time.time() + VALIDADE_LINK))
+        conn.commit()
+
+        link = url_for("contas.redefinir_senha", token=token, _external=True)
+        primeiro_nome = cliente["nome"].split()[0]
+        texto = (f"Olá, {primeiro_nome}!\n\n"
+                 "Recebemos um pedido para trocar a senha da sua conta na Quilombo Doces.\n"
+                 f"Para criar uma senha nova, abra este link (vale por 1 hora):\n\n{link}\n\n"
+                 "Se não foi você, é só ignorar este e-mail: sua senha continua a mesma.\n\n"
+                 "Quilombo Doces")
+        html = render_template("email_redefinir.html", nome=primeiro_nome, link=link)
+        enviar_email(cliente["email"], "Quilombo Doces - criar uma nova senha", texto, html)
+    conn.close()
+
+    # a mesma resposta tendo conta ou nao: assim ninguem descobre quais
+    # e-mails estao cadastrados
+    return render_template("conta_esqueci.html", enviado=True, email=email)
+
+
+def buscar_redefinicao(conn, token):
+    """O pedido de troca de senha deste link, se ainda valer (senao None)."""
+    return conn.execute(
+        'SELECT * FROM redefinicoes_senha WHERE token_hash = ? AND usado = 0 '
+        'AND expira_em > ?', (hash_token(token), time.time())).fetchone()
+
+
+@contas.route("/conta/redefinir/<token>", methods=["GET", "POST"])
+def redefinir_senha(token):
+    """Pagina do link do e-mail: escolher a senha nova."""
+    conn = conectar_banco()
+    pedido = buscar_redefinicao(conn, token)
+    if pedido is None:
+        conn.close()
+        return render_template("conta_redefinir.html", valido=False, erro="")
+
+    erro = ""
+    if request.method == "POST":
+        senha = request.form.get("senha", "")
+        if len(senha) < 6:
+            erro = "A senha precisa ter pelo menos 6 caracteres."
+        elif senha != request.form.get("confirmar", ""):
+            erro = "As duas senhas não são iguais."
+        else:
+            conn.execute('UPDATE clientes SET senha_hash = ? WHERE id = ?',
+                         (generate_password_hash(senha), pedido["cliente_id"]))
+            conn.execute('UPDATE redefinicoes_senha SET usado = 1 WHERE cliente_id = ?',
+                         (pedido["cliente_id"],))
+            conn.commit()
+            conn.close()
+            flash("Senha trocada! Agora entre com o seu CPF e a senha nova.")
+            return redirect(url_for("contas.entrar"))
+
+    conn.close()
+    return render_template("conta_redefinir.html", valido=True, erro=erro, token=token)
 
 
 @contas.route("/conta/sair", methods=["POST"])

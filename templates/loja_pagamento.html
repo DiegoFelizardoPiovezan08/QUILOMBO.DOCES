@@ -21,7 +21,30 @@
       </dl>
       <a href="{{ url_for('contas.editar', proximo=url_for('loja_pagamento')) }}">Alterar meus dados</a>
 
-      <button type="submit" class="btn btn-principal btn-grande">Gerar Pix</button>
+      <!-- entrega: o preco depende da distancia ate a loja -->
+      <h3 class="entrega-titulo">Entrega</h3>
+      {% if calculo.preco is not none %}
+        <div class="opcao-entrega">
+          <span>
+            <b>Receber em casa</b>
+            <small>{{ calculo.km|km }} da loja{% if calculo.prazo %} &middot; {{ calculo.prazo }}{% endif %}</small>
+          </span>
+          <strong>{% if calculo.preco %}R$ {{ calculo.preco|brl }}{% else %}Grátis{% endif %}</strong>
+        </div>
+        <button type="submit" class="btn btn-principal btn-grande">Gerar Pix</button>
+      {% else %}
+        <!-- sem entrega para este CEP: fala com a loja -->
+        <p class="opcao-indisponivel">
+          {% if calculo.motivo == 'longe' %}
+            Seu endereço fica a <b>{{ calculo.km|km }}</b> da loja e entregamos até
+            {{ calculo.maximo|km if calculo.maximo else '-' }}.
+          {% elif calculo.motivo == 'cep' %}
+            Não conseguimos calcular a entrega para o CEP <b>{{ cliente['cep'] }}</b> agora.
+          {% else %}
+            No momento não conseguimos entregar no seu CEP.
+          {% endif %}
+          <a href="https://wa.me/{{ whatsapp }}" target="_blank">Fale com a gente pelo WhatsApp</a>.</p>
+      {% endif %}
       <p class="dica">O pedido fica salvo na sua conta, em <b>Minha conta</b>.</p>
     </form>
 
@@ -34,12 +57,21 @@
           <span>R$ {{ item.subtotal|brl }}</span>
         </p>
       {% endfor %}
+      <p class="resumo-item">
+        <span>Subtotal</span>
+        <span>R$ {{ total|brl }}</span>
+      </p>
+      <p class="resumo-item">
+        <span>Frete</span>
+        <span>{% if calculo.preco is none %}-{% elif calculo.preco %}R$ {{ calculo.preco|brl }}{% else %}Grátis{% endif %}</span>
+      </p>
       <p class="resumo-linha">
         <span>Total</span>
-        <strong>R$ {{ total|brl }}</strong>
+        <strong>R$ {{ (total + (calculo.preco or 0))|brl }}</strong>
       </p>
     </aside>
 
   </div>
+
 
 {% endblock %}

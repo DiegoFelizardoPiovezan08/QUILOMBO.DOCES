@@ -4,3 +4,6 @@ dados/chave_secreta.txt
 # banco de dados: tem CPF, endereco e telefone dos clientes e as senhas
 # dos admins. Cada computador/servidor fica com o seu; nunca vai para o GitHub
 dados/cadastro.db
+
+# configuracao do e-mail da loja (tem a senha de app do Gmail)
+config_email.py

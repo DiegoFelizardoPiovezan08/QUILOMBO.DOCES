@@ -34,6 +34,13 @@
         {% if erros.get('cpf') %}<span class="erro">{{ erros['cpf'] }}</span>{% endif %}
       </div>
       <div class="campo">
+        <label for="email">E-mail <span class="obrigatorio">*</span></label>
+        <input type="email" id="email" name="email" value="{{ dados.get('email', '') or '' }}"
+               placeholder="maria@gmail.com" autocomplete="email" required>
+        <span class="dica">Usado para recuperar a senha, se você esquecer.</span>
+        {% if erros.get('email') %}<span class="erro">{{ erros['email'] }}</span>{% endif %}
+      </div>
+      <div class="campo">
         <label for="telefone">WhatsApp (com DDD) <span class="obrigatorio">*</span></label>
         <input type="tel" id="telefone" name="telefone" value="{{ dados.get('telefone', '') }}"
                placeholder="11 99999-9999" autocomplete="tel" required>

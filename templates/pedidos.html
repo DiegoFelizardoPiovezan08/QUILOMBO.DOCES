@@ -1,5 +1,6 @@
-<!-- aba pedidos: "Pendentes" (conferir os Pix e confirmar) e
-     "Historico" (pedidos ja finalizados, separados por mes) -->
+<!-- aba pedidos: "Pendentes" (conferir os Pix e confirmar),
+     "Historico" (pedidos ja finalizados, separados por mes) e
+     "Graficos" (doces mais e menos vendidos, por mes) -->
 {% extends "base.html" %}
 
 {% block titulo %}Pedidos{% endblock %}
@@ -18,7 +19,13 @@
       Pendentes{% if qtd_pendentes %} ({{ qtd_pendentes }}){% endif %}</a>
     <a href="{{ url_for('pedidos', aba='historico') }}" class="{% if aba == 'historico' %}ativo{% endif %}">
       Histórico</a>
+    <a href="{{ url_for('pedidos', aba='graficos') }}" class="{% if aba == 'graficos' %}ativo{% endif %}">
+      Gráficos</a>
   </div>
+
+  {% if aba == 'graficos' %}
+    {% include "_graficos.html" %}
+  {% else %}
 
   {% if aba == 'pendentes' %}
     <p class="dica">Antes de confirmar, abra o app do banco e veja se caiu um Pix com o <b>valor do pedido</b>
@@ -69,7 +76,7 @@
             {% if p['cpf'] %}<br><small>CPF {{ p['cpf']|cpf }}</small>{% endif %}
             {% if p['endereco'] %}<br><small class="endereco-pedido">{{ p['endereco'] }}</small>{% endif %}
           </td>
-          <td class="texto-livre">{{ p['itens'] }}</td>
+          <td class="texto-livre">{{ p['itens'] }}{% if p['entrega'] %}<br><small class="entrega-pedido">{{ p|entrega }}</small>{% endif %}</td>
           <td><b>R$ {{ p['total']|brl }}</b></td>
           <td>
             {% if p['status'] == 'informado' %}<span class="selo selo-informado">Cliente diz que pagou</span>
@@ -130,5 +137,6 @@
     {% endif %}
   {% else %}
     <p class="vazio">{{ 'Nenhum pedido pendente.' if aba == 'pendentes' else 'Nenhum pedido finalizado ainda.' }}</p>
+  {% endif %}
   {% endif %}
 {% endblock %}

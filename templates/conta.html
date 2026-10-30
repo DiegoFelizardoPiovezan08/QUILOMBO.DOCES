@@ -18,6 +18,7 @@
       <h3>{{ cliente['nome'] }}</h3>
       <dl>
         <dt>CPF</dt><dd>{{ cliente['cpf']|cpf }}</dd>
+        <dt>E-mail</dt><dd>{{ cliente['email'] or '' }}</dd>
         <dt>WhatsApp</dt><dd>{{ cliente['telefone'] }}</dd>
         <dt>Endereço</dt>
         <dd>
@@ -39,6 +40,7 @@
               <b>Pedido {{ p['id']|numero_pedido }}</b>
               <small>{{ p['criado_em'] }}</small>
               <span class="pedido-itens">{{ p['itens'] }}</span>
+              {% if p['entrega'] %}<span class="pedido-itens">{{ p|entrega }}</span>{% endif %}
             </div>
             <div class="pedido-lado">
               <b>R$ {{ p['total']|brl }}</b>

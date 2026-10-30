@@ -1,0 +1,31 @@
+{% extends "base_loja.html" %}
+
+{% block titulo %}Criar nova senha{% endblock %}
+
+{% block conteudo %}
+
+  <h2 class="secao-titulo">Criar nova senha</h2>
+
+  <div class="cartao formulario formulario-estreito">
+    {% if not valido %}
+      <!-- link vencido (mais de 1 hora), ja usado ou errado -->
+      <h3>Este link não vale mais</h3>
+      <p>O link para trocar a senha vale por 1 hora e só pode ser usado uma vez.</p>
+      <a class="btn btn-principal btn-grande" href="{{ url_for('contas.esqueci_senha') }}">Pedir um novo link</a>
+    {% else %}
+      <form class="formulario" method="post" action="{{ url_for('contas.redefinir_senha', token=token) }}">
+        {% if erro %}<p class="erro-caixa">{{ erro }}</p>{% endif %}
+
+        <label for="senha">Nova senha</label>
+        <input type="password" id="senha" name="senha" autocomplete="new-password" required autofocus>
+
+        <label for="confirmar">Repita a nova senha</label>
+        <input type="password" id="confirmar" name="confirmar" autocomplete="new-password" required>
+        <p class="dica">Pelo menos 6 caracteres.</p>
+
+        <button type="submit" class="btn btn-principal btn-grande">Salvar nova senha</button>
+      </form>
+    {% endif %}
+  </div>
+
+{% endblock %}

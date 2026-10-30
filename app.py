@@ -17,6 +17,7 @@ from flask import (Flask, request, render_template, redirect, url_for,
 from werkzeug.security import check_password_hash
 from cadastro_sqlite import conectar_banco, validar_preco
 from contas import contas, cliente_atual, endereco_completo
+from geolocalizacao import coordenadas_do_cep, distancia_km
 from urllib.parse import quote
 
 
@@ -519,10 +520,22 @@ def numero_pedido(id_pedido):
     return f"#{id_pedido:04d}"
 
 
+@app.template_filter("entrega")
+def texto_entrega(pedido):
+    """Linha da entrega para mostrar no pedido e nas mensagens, ex.:
+    "Entrega - 7,2 km (1 a 2 dias): R$ 10,00".
+    Pedidos antigos (antes do frete) nao tem: devolve vazio."""
+    if not pedido["entrega"]:
+        return ""
+    valor = f"R$ {formato_brl(pedido['frete'])}" if pedido["frete"] else "grátis"
+    return f"{pedido['entrega']}: {valor}\n"
+
+
 def link_whatsapp_pedido(pedido):
     """Link do WhatsApp da loja com o pedido JA CONFIRMADO escrito."""
     texto = (f"Olá! Meu pedido {numero_pedido(pedido['id'])} teve o pagamento "
-             f"confirmado:\n{pedido['itens']}\nTotal: R$ {formato_brl(pedido['total'])}")
+             f"confirmado:\n{pedido['itens']}\n{texto_entrega(pedido)}"
+             f"Total: R$ {formato_brl(pedido['total'])}")
     return f"https://wa.me/{WHATSAPP}?text={quote(texto)}"
 
 @app.template_filter("aviso_pagamento")
@@ -535,6 +548,7 @@ def link_aviso_pagamento(pedido):
              f"Recebemos o seu Pix e o pagamento do pedido "
              f"{numero_pedido(pedido['id'])} foi CONFIRMADO! ✅\n\n"
              f"{pedido['itens']}\n"
+             f"{texto_entrega(pedido)}"
              f"Total: R$ {formato_brl(pedido['total'])}\n\n"
              f"Já estamos preparando tudo com carinho. "
              f"Acompanhe o seu pedido aqui: {endereco_pedido}")
@@ -650,8 +664,10 @@ def admin_sair():
 def loja():
     """Pagina inicial da loja: carrossel, destaques e mais vendidos."""
     conn = conectar_banco()
-    # cada foto vira {"arquivo": caminho dentro de static, "legenda": texto}
-    slides = [{"arquivo": "uploads/" + s["imagem"], "legenda": s["legenda"]}
+    # cada foto vira {"arquivo": caminho dentro de static, "legenda": texto,
+    # "celular": versao quadrada para o celular (ou None)}
+    slides = [{"arquivo": "uploads/" + s["imagem"], "legenda": s["legenda"],
+               "celular": "uploads/" + s["imagem_celular"] if s["imagem_celular"] else None}
               for s in conn.execute('SELECT * FROM carrossel ORDER BY id')]
         # so os doces marcados como destaque (todos continuam na aba Produtos)
     doces = conn.execute(
@@ -665,7 +681,7 @@ def loja():
         for n in range(1, 5):
             arquivo = f"img/carrossel-{n}.jpg"
             if os.path.exists(os.path.join(app.static_folder, arquivo)):
-                slides.append({"arquivo": arquivo, "legenda": ""})
+                slides.append({"arquivo": arquivo, "legenda": "", "celular": None})
 
     return render_template("loja.html", slides=slides, doces=doces,
                            vendidos=vendidos)
@@ -813,10 +829,20 @@ def loja_sobre():
 def loja_carrinho():
     itens, total, link_whatsapp = montar_carrinho()
 
+    # "Calcular frete": CEP digitado no carrinho (ou o da conta do cliente)
+    cliente = cliente_atual()
+    cep_frete = request.args.get("cep", "").strip()
+    calculo = None
+    if cep_frete and itens:
+        conn = conectar_banco()
+        calculo = calcular_frete(conn, cep_frete)
+        conn.close()
+    elif cliente:
+        cep_frete = cliente["cep"]
+
     # cliente logado: mostra tambem os pedidos que ainda estao no pagamento,
     # para ele voltar de onde parou mesmo depois de sair ou atualizar a pagina
     pedidos_abertos = []
-    cliente = cliente_atual()
     if cliente:
         conn = conectar_banco()
         pedidos_abertos = conn.execute(
@@ -827,6 +853,7 @@ def loja_carrinho():
 
     return render_template("loja_carrinho.html", itens=itens, total=total,
                            link_whatsapp=link_whatsapp,
+                           cep_frete=cep_frete, calculo=calculo,
                            pedidos_abertos=pedidos_abertos,
                            tem_falta=any(i["falta"] for i in itens))
 
@@ -859,9 +886,23 @@ def loja_pagamento():
         return redirect(url_for("loja_carrinho"))
 
 
+    # entrega: o preco depende da distancia do CEP do cliente ate a loja
+    conn = conectar_banco()
+    calculo = calcular_frete(conn, cliente["cep"])
+    conn.close()
+
     if request.method == "GET":
         return render_template("loja_pagamento.html", itens=itens, total=total,
-                               endereco=endereco_completo(cliente))
+                               endereco=endereco_completo(cliente), calculo=calculo)
+
+    # confere de novo aqui (o preco do frete nunca vem do navegador)
+    if calculo["preco"] is None:
+        flash("No momento não conseguimos entregar no seu CEP. Fale com a gente pelo WhatsApp.")
+        return redirect(url_for("loja_pagamento"))
+    valor_frete = calculo["preco"]
+    entrega = f"Entrega - {formatar_km(calculo['km'])}"
+    if calculo.get("prazo"):
+        entrega += f" ({calculo['prazo']})"
 
     # os itens ficam guardados como texto: o pedido nao muda se o preco mudar depois
     texto_itens = "\n".join(f"{i['qtd']}x {i['nome']} (R$ {formato_brl(i['subtotal'])})"
@@ -873,10 +914,13 @@ def loja_pagamento():
     conn = conectar_banco()
     conn.execute(
         'INSERT INTO pedidos (token, nome, telefone, itens, total, criado_em, '
-        'cliente_id, cpf, endereco, itens_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        (token, cliente["nome"], cliente["telefone"], texto_itens, round(total, 2),
+        'cliente_id, cpf, endereco, itens_json, entrega, frete) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        (token, cliente["nome"], cliente["telefone"], texto_itens,
+         round(total + valor_frete, 2),          # o total do Pix ja inclui o frete
          datetime.now().strftime("%d/%m/%Y %H:%M"),
-         cliente["id"], cliente["cpf"], endereco_completo(cliente), itens_json))
+         cliente["id"], cliente["cpf"], endereco_completo(cliente), itens_json,
+         entrega, valor_frete))
     conn.commit()
     conn.close()
 
@@ -1269,7 +1313,24 @@ def pedidos():
         "WHERE status IN ('aguardando', 'informado')").fetchone()[0]
 
     meses = []
-    if aba == "historico":
+    graficos = None
+    if aba == "graficos":
+        # aba Graficos (so pedidos pagos contam como venda), com duas abas:
+        # - "mes": numeros e barras de mais/menos vendidos do mes escolhido
+        # - "ano": linhas com as vendas gerais de janeiro a dezembro
+        lista = []
+        visao = request.args.get("visao", "mes")
+        if visao == "ano":
+            anos = anos_com_vendas(conn)
+            ano = request.args.get("ano", "")
+            ano = int(ano) if ano.isdigit() else (anos[0] if anos else date.today().year)
+            graficos = {"visao": "ano", "anos": anos, "ano": ano,
+                        "linhas": vendas_do_ano(conn, ano)}
+        else:
+            meses = meses_com_pedidos(conn, ("pago",))
+            graficos = dados_graficos(conn, mes)
+            graficos["visao"] = "mes"
+    elif aba == "historico":
         # criado_em fica como "27/10/2026 10:51": o mes/ano e o pedaco "10/2026"
         filtro = "WHERE status IN ('pago', 'cancelado') "
         valores = ()
@@ -1291,15 +1352,8 @@ def pedidos():
             "SELECT * FROM pedidos " + filtro + "ORDER BY id DESC LIMIT ? OFFSET ?",
             valores + (POR_PAGINA, (pagina - 1) * POR_PAGINA)).fetchall()
 
-        # uma opcao do select para cada mes que tem pedido finalizado (mais novo primeiro)
-        linhas = conn.execute(
-            "SELECT SUBSTR(criado_em, 4, 7) AS mes, COUNT(*) AS qtd FROM pedidos "
-            "WHERE status IN ('pago', 'cancelado') GROUP BY mes "
-            "ORDER BY SUBSTR(mes, 4, 4) DESC, SUBSTR(mes, 1, 2) DESC").fetchall()
-        for linha in linhas:
-            numero, ano = linha["mes"].split("/")
-            meses.append({"valor": linha["mes"], "qtd": linha["qtd"],
-                          "nome": f"{MESES[int(numero)]} {ano}"})
+        # uma opcao do select para cada mes que tem pedido finalizado
+        meses = meses_com_pedidos(conn, ("pago", "cancelado"))
     else:
         aba = "pendentes"
         lista = conn.execute(
@@ -1312,7 +1366,129 @@ def pedidos():
                            meses=meses, qtd_pendentes=qtd_pendentes,
                            qtd_pagos=qtd_pagos or 0, total_pago=total_pago or 0,
                            pagina=pagina, total_paginas=total_paginas,
-                           msg=request.args.get("msg", ""))
+                           graficos=graficos, msg=request.args.get("msg", ""))
+
+
+def meses_com_pedidos(conn, situacoes):
+    """Opcoes do select de mes: cada mes/ano que tem pedido nessas situacoes,
+    do mais novo para o mais antigo. criado_em = "27/10/2026 10:51", entao
+    o mes/ano e o pedaco "10/2026"."""
+    marcas = ", ".join("?" for _ in situacoes)
+    linhas = conn.execute(
+        "SELECT SUBSTR(criado_em, 4, 7) AS mes, COUNT(*) AS qtd FROM pedidos "
+        f"WHERE status IN ({marcas}) GROUP BY mes "
+        "ORDER BY SUBSTR(mes, 4, 4) DESC, SUBSTR(mes, 1, 2) DESC", situacoes).fetchall()
+    meses = []
+    for linha in linhas:
+        numero, ano = linha["mes"].split("/")
+        meses.append({"valor": linha["mes"], "qtd": linha["qtd"],
+                      "nome": f"{MESES[int(numero)]} {ano}"})
+    return meses
+
+
+MESES_CURTOS = ["", "jan", "fev", "mar", "abr", "mai", "jun",
+                "jul", "ago", "set", "out", "nov", "dez"]
+
+
+def ler_itens(texto):
+    """ "2x Doce De Caju (R$ 30,00)" (uma linha por doce) -> [(2, "Doce De Caju", 30.0)] """
+    itens = []
+    for linha in (texto or "").splitlines():
+        achou = re.match(r"(\d+)x (.+) \(R\$ ([\d.,]+)\)", linha.strip())
+        if achou:
+            valor = float(achou.group(3).replace(".", "").replace(",", "."))
+            itens.append((int(achou.group(1)), achou.group(2), valor))
+    return itens
+
+
+def anos_com_vendas(conn):
+    """Anos que tem pedido pago, do mais novo para o mais antigo: [2026, 2025]."""
+    linhas = conn.execute("SELECT DISTINCT SUBSTR(criado_em, 7, 4) AS ano FROM pedidos "
+                          "WHERE status = 'pago' ORDER BY ano DESC").fetchall()
+    return [int(l["ano"]) for l in linhas]
+
+
+def vendas_do_ano(conn, ano):
+    """Dados dos graficos de linha: as vendas GERAIS (todos os doces juntos)
+    de cada mes do ano, de janeiro a dezembro.
+    Devolve {"meses": [...], "qtd": [...], "valor": [...], "pedidos": [...]}:
+    unidades vendidas, valor recebido (com frete) e numero de pedidos pagos."""
+    # criado_em = "27/10/2026 10:51": o ano e o pedaco "2026" e o mes, o "10"
+    pagos = conn.execute("SELECT itens, total, criado_em FROM pedidos "
+                         "WHERE status = 'pago' AND SUBSTR(criado_em, 7, 4) = ?",
+                         (str(ano),)).fetchall()
+
+    qtd = [0] * 12
+    valor = [0.0] * 12
+    pedidos = [0] * 12
+    for pedido in pagos:
+        i = int(pedido["criado_em"][3:5]) - 1          # janeiro = 0 ... dezembro = 11
+        qtd[i] += sum(q for q, _, _ in ler_itens(pedido["itens"]))
+        valor[i] += pedido["total"]
+        pedidos[i] += 1
+
+    meses = [{"rotulo": MESES_CURTOS[n], "nome": f"{MESES[n]} {ano}"} for n in range(1, 13)]
+    total_qtd, total_valor, total_pedidos = sum(qtd), round(sum(valor), 2), sum(pedidos)
+    valor = [round(v, 2) for v in valor]
+
+    # ano atual: os meses que ainda nao chegaram ficam vazios (None), e nao 0,
+    # para a linha parar no mes de hoje em vez de "cair" para zero
+    hoje = date.today()
+    if ano == hoje.year:
+        for i in range(hoje.month, 12):
+            qtd[i] = valor[i] = pedidos[i] = None
+
+    return {"meses": meses, "qtd": qtd, "valor": valor, "pedidos": pedidos,
+            "tem_vendas": total_pedidos > 0, "total_qtd": total_qtd,
+            "total_valor": total_valor, "total_pedidos": total_pedidos}
+
+
+def dados_graficos(conn, mes=""):
+    """Numeros da aba Graficos (so pedidos PAGOS; mes = "10/2026" ou "" = todos).
+
+    Cada pedido guarda os itens como texto, uma linha por doce:
+    "2x Doce De Caju (R$ 30,00)" -> 2 unidades, R$ 30,00 de venda.
+    Somamos isso doce por doce. Doces cadastrados que nao venderam nada
+    entram com 0 (sao os "menos vendidos")."""
+    sql = "SELECT itens, total FROM pedidos WHERE status = 'pago'"
+    valores = ()
+    if mes:
+        sql += " AND SUBSTR(criado_em, 4, 7) = ?"
+        valores = (mes,)
+    pedidos_pagos = conn.execute(sql, valores).fetchall()
+
+    # todos os doces cadastrados comecam com 0 vendas
+    vendas = {}                                   # nome minusculo -> dados
+    for doce in conn.execute('SELECT nome FROM doces'):
+        vendas[doce["nome"].lower()] = {"nome": doce["nome"], "qtd": 0, "valor": 0.0,
+                                         "cadastrado": True}
+
+    for pedido in pedidos_pagos:
+        for qtd, nome, valor in ler_itens(pedido["itens"]):
+            # doce que foi apagado ou mudou de nome tambem conta (com o nome antigo)
+            item = vendas.setdefault(nome.lower(), {"nome": nome, "qtd": 0, "valor": 0.0,
+                                                    "cadastrado": False})
+            item["qtd"] += qtd
+            item["valor"] += valor
+
+    todos = list(vendas.values())
+    vendidos = [v for v in todos if v["qtd"] > 0]
+    faturamento = sum(p["total"] for p in pedidos_pagos)   # inclui o frete
+
+    return {
+        "qtd_pedidos": len(pedidos_pagos),
+        "faturamento": faturamento,
+        "unidades": sum(v["qtd"] for v in todos),
+        "ticket_medio": faturamento / len(pedidos_pagos) if pedidos_pagos else 0,
+        # 5 que mais venderam (empate: pelo nome)
+        "mais": sorted(vendidos, key=lambda v: (-v["qtd"], v["nome"]))[:5],
+        # 5 doces da loja (ainda cadastrados) que menos venderam, contando
+        # os que nao venderam nada
+        "menos": sorted([v for v in todos if v["cadastrado"]],
+                        key=lambda v: (v["qtd"], v["nome"]))[:5],
+        # tabela completa (do que mais vendeu para o que menos vendeu)
+        "tabela": sorted(todos, key=lambda v: (-v["qtd"], v["nome"])),
+    }
 
 
 @app.route("/pedido/<int:id_pedido>/<acao>", methods=["POST"])
@@ -1366,6 +1542,163 @@ def mudar_pedido(id_pedido, acao):
     if aba == "historico":
         return redirect(url_for("pedidos", aba=aba, mes=mes, pagina=pagina, msg=msg))
     return redirect(url_for("pedidos", msg=msg))
+
+
+# ----------------------------------------------------------- FRETE
+# O pedido sempre e entregue. O preco depende da DISTANCIA entre a loja e o
+# CEP do cliente: o site descobre onde fica o CEP (geolocalizacao.py), calcula
+# os km e procura o preco na tabela da aba Frete (ex.: ate 5 km = R$ 8,00).
+# Mais longe que a ultima linha da tabela = nao entregamos.
+
+def so_digitos(texto):
+    """ "06010-000" -> "06010000" """
+    return "".join(c for c in (texto or "") if c.isdigit())
+
+
+def formatar_cep(cep):
+    """ "06010000" -> "06010-000" """
+    cep = so_digitos(cep)
+    return f"{cep[:5]}-{cep[5:]}" if len(cep) == 8 else cep
+
+
+app.jinja_env.filters["cep"] = formatar_cep
+
+
+@app.template_filter("km")
+def formatar_km(valor):
+    """7.2 -> "7,2 km" """
+    return f"{valor:.1f}".replace(".", ",") + " km"
+
+
+def ler_config(conn, chave, padrao=""):
+    """Le uma configuracao da loja (tabela configuracoes)."""
+    linha = conn.execute('SELECT valor FROM configuracoes WHERE chave = ?',
+                         (chave,)).fetchone()
+    return linha["valor"] if linha else padrao
+
+
+def salvar_config(conn, chave, valor):
+    conn.execute('INSERT OR REPLACE INTO configuracoes (chave, valor) VALUES (?, ?)',
+                 (chave, valor))
+
+
+def local_da_loja(conn):
+    """De onde saem as entregas: {"cep", "lat", "lon", "prazo"} (lat/lon None
+    enquanto o CEP da loja nao for cadastrado na aba Frete)."""
+    lat, lon = ler_config(conn, "loja_lat"), ler_config(conn, "loja_lon")
+    return {"cep": ler_config(conn, "loja_cep"),
+            "lat": float(lat) if lat else None,
+            "lon": float(lon) if lon else None,
+            "prazo": ler_config(conn, "entrega_prazo")}
+
+
+def calcular_frete(conn, cep):
+    """Frete para um CEP. Devolve um dicionario com:
+    - "km": distancia aproximada (ou None se nao deu para calcular)
+    - "preco": valor do frete (None = nao entregamos)
+    - "motivo": por que nao tem entrega (quando "preco" e None)"""
+    loja = local_da_loja(conn)
+    if loja["lat"] is None:
+        return {"km": None, "preco": None, "motivo": "sem_loja"}
+    destino = coordenadas_do_cep(conn, cep)
+    if destino is None:
+        return {"km": None, "preco": None, "motivo": "cep"}
+
+    km = distancia_km((loja["lat"], loja["lon"]), destino)
+    # a primeira faixa que cobre a distancia (ex.: 7 km cai no "ate 10 km")
+    faixa = conn.execute('SELECT * FROM frete_km WHERE ate_km >= ? '
+                         'ORDER BY ate_km LIMIT 1', (km,)).fetchone()
+    if faixa is None:
+        maximo = conn.execute('SELECT MAX(ate_km) FROM frete_km').fetchone()[0]
+        return {"km": km, "preco": None, "motivo": "longe", "maximo": maximo}
+    return {"km": km, "preco": faixa["preco"], "prazo": loja["prazo"]}
+
+
+def ler_numero(texto):
+    """ "12,50" -> 12.5 (ou None se nao for numero >= 0) """
+    try:
+        valor = float((texto or "").replace(",", "."))
+    except ValueError:
+        return None
+    return valor if valor >= 0 else None
+
+
+@app.route("/frete", methods=["GET", "POST"])
+def frete():
+    """Aba Frete do admin: local da loja e tabela de precos por km."""
+    conn = conectar_banco()
+    erros = {}
+    dados = {}
+    acao = request.form.get("acao", "")
+
+    if request.method == "POST" and acao == "loja":
+        # de onde saem as entregas: pelo CEP ou, se preferir, pelas
+        # coordenadas copiadas do Google Maps
+        cep = so_digitos(request.form.get("cep", ""))
+        dados = {"cep": request.form.get("cep", "").strip(),
+                 "coordenadas": request.form.get("coordenadas", "").strip(),
+                 "prazo": request.form.get("prazo", "").strip()}
+        ponto = None
+        if dados["coordenadas"]:
+            try:
+                lat, lon = [float(p) for p in dados["coordenadas"].replace(" ", "").split(",")]
+                ponto = (lat, lon)
+            except ValueError:
+                erros["coordenadas"] = "Cole no formato do Google Maps, ex.: -23.5329, -46.7920"
+        elif len(cep) != 8:
+            erros["cep"] = "O CEP tem 8 números (ex.: 06010-000)."
+        else:
+            ponto = coordenadas_do_cep(conn, cep)
+            if ponto is None:
+                erros["cep"] = ("Não achamos a localização deste CEP agora. Confira a "
+                                "internet ou cole as coordenadas do Google Maps abaixo.")
+        if not erros:
+            salvar_config(conn, "loja_cep", cep)
+            salvar_config(conn, "loja_lat", str(ponto[0]))
+            salvar_config(conn, "loja_lon", str(ponto[1]))
+            salvar_config(conn, "entrega_prazo", dados["prazo"])
+            conn.commit()
+            conn.close()
+            return redirect(url_for("frete", msg="Local da loja salvo!"))
+
+    if request.method == "POST" and acao == "faixa":
+        dados = {"ate_km": request.form.get("ate_km", "").strip(),
+                 "preco": request.form.get("preco", "").strip()}
+        ate_km, preco = ler_numero(dados["ate_km"]), ler_numero(dados["preco"])
+        if not ate_km:
+            erros["ate_km"] = "Informe a distância em km (ex.: 5 ou 7,5)."
+        if preco is None:
+            erros["preco"] = "Informe o preço (ex.: 10,00; 0 = grátis)."
+        if not erros:
+            conn.execute('DELETE FROM frete_km WHERE ate_km = ?', (ate_km,))   # troca se ja existir
+            conn.execute('INSERT INTO frete_km (ate_km, preco) VALUES (?, ?)',
+                         (ate_km, round(preco, 2)))
+            conn.commit()
+            conn.close()
+            return redirect(url_for("frete", msg="Faixa salva na tabela!"))
+
+    # testar: o admin digita um CEP e ve a distancia e o preco
+    teste = None
+    cep_teste = request.args.get("cep_teste", "").strip()
+    if cep_teste:
+        teste = calcular_frete(conn, cep_teste)
+
+    faixas = conn.execute('SELECT * FROM frete_km ORDER BY ate_km').fetchall()
+    loja = local_da_loja(conn)
+    conn.close()
+    return render_template("frete.html", faixas=faixas, loja=loja,
+                           dados=dados, erros=erros, acao=acao, teste=teste,
+                           cep_teste=cep_teste, msg=request.args.get("msg", "")), \
+        (400 if erros else 200)
+
+
+@app.route("/frete/<int:id_faixa>/excluir", methods=["POST"])
+def excluir_frete(id_faixa):
+    conn = conectar_banco()
+    conn.execute('DELETE FROM frete_km WHERE id = ?', (id_faixa,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("frete", msg="Faixa excluída."))
 
 
 # ----------------------------------------------------------- CATEGORIAS (ADMIN)
@@ -1472,13 +1805,18 @@ def carrossel():
         arquivo, erro_imagem = ler_imagem()
         if arquivo is None and erro_imagem is None:
             erro_imagem = "Escolha uma imagem para enviar."
+        # versao quadrada para o celular (opcional)
+        celular, erro_celular = ler_imagem("imagem_celular")
 
         if erro_imagem:
             erros["imagem"] = erro_imagem
-        else:
+        if erro_celular:
+            erros["imagem_celular"] = erro_celular
+        if not erros:
             conn.execute(
-                'INSERT INTO carrossel (imagem, legenda) VALUES (?, ?)',
-                (salvar_imagem(arquivo), request.form.get("legenda", "").strip()))
+                'INSERT INTO carrossel (imagem, imagem_celular, legenda) VALUES (?, ?, ?)',
+                (salvar_imagem(arquivo), salvar_imagem(celular) if celular else None,
+                 request.form.get("legenda", "").strip()))
             conn.commit()
             conn.close()
             return redirect(url_for("carrossel", msg="Foto adicionada ao carrossel!"))
@@ -1506,8 +1844,34 @@ def excluir_slide(id_slide):
     conn.commit()
     conn.close()
     apagar_imagem(slide["imagem"])
+    if slide["imagem_celular"]:
+        apagar_imagem(slide["imagem_celular"])
 
     return redirect(url_for("carrossel", msg="Foto removida do carrossel."))
+
+
+@app.route("/carrossel/<int:id_slide>/celular", methods=["POST"])
+def foto_celular_slide(id_slide):
+    """Coloca (ou troca) a versao quadrada de uma foto que ja esta no carrossel."""
+    conn = conectar_banco()
+    slide = conn.execute('SELECT * FROM carrossel WHERE id = ?', (id_slide,)).fetchone()
+    if slide is None:
+        conn.close()
+        return render_template("erro.html",
+                               mensagem=f"Nao existe foto com id {id_slide}."), 404
+
+    celular, erro = ler_imagem("imagem_celular")
+    if celular is None:
+        conn.close()
+        return redirect(url_for("carrossel", msg=erro or "Escolha a foto do celular para enviar."))
+
+    if slide["imagem_celular"]:
+        apagar_imagem(slide["imagem_celular"])
+    conn.execute('UPDATE carrossel SET imagem_celular = ? WHERE id = ?',
+                 (salvar_imagem(celular), id_slide))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("carrossel", msg="Foto do celular salva!"))
 
 
 if __name__ == "__main__":

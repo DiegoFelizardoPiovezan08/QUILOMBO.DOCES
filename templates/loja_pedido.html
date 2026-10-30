@@ -69,6 +69,7 @@
     <aside class="resumo">
       <h3>Resumo</h3>
       <p class="resumo-pedido">{{ pedido['itens'] }}</p>
+      {% if pedido['entrega'] %}<p class="resumo-entrega">{{ pedido|entrega }}</p>{% endif %}
       <p class="resumo-linha">
         <span>Total</span>
         <strong>R$ {{ pedido['total']|brl }}</strong>

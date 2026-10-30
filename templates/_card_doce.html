@@ -13,10 +13,8 @@
   </a>
 
   <div class="card-corpo">
+    {# so o nome e o preco (a descricao aparece na pagina do doce) #}
     <h3><a href="{{ url_for('loja_produto', id_doce=p['id']) }}">{{ p['nome'] }}</a></h3>
-    {% if p['descricao'] %}
-      <p class="card-descricao">{{ p['descricao']|truncate(100) }}</p>
-    {% endif %}
     <p class="preco">R$ {{ p['preco']|brl }}</p>
 
     {# a quantidade em estoque nunca aparece na loja: so "Esgotado" quando acaba #}
@@ -24,7 +22,14 @@
       <button type="button" class="btn btn-esgotado" disabled>Esgotado</button>
     {% else %}
       <form method="post" action="{{ url_for('loja_adicionar', id_doce=p['id']) }}">
-        <button type="submit" class="btn btn-principal">Adicionar ao carrinho</button>
+        <button type="submit" class="btn btn-adicionar">
+          <!-- sacola -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 8h14l-1 13H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>
+          </svg>
+          Adicionar
+        </button>
       </form>
     {% endif %}
   </div>

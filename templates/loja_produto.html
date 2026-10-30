@@ -2,6 +2,10 @@
 
 {% block titulo %}{{ doce['nome'] }}{% endblock %}
 
+{# previa no WhatsApp/Google: a descricao e a foto deste doce #}
+{% block descricao %}{{ doce['nome'] }} por R$ {{ doce['preco']|brl }}{% if doce['descricao'] %}. {{ doce['descricao']|truncate(140) }}{% endif %}{% endblock %}
+{% block imagem_compartilhar %}{% if doce['imagem'] %}{{ url_for('static', filename='uploads/' ~ doce['imagem'], _external=True) }}{% else %}{{ super() }}{% endif %}{% endblock %}
+
 {% block conteudo %}
 
   <p class="voltar"><a href="{{ url_for('loja_produtos') }}">&larr; Voltar aos doces</a></p>

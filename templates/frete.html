@@ -1,0 +1,108 @@
+<!-- aba frete: local da loja e tabela de precos por km -->
+{% extends "base.html" %}
+
+{% block titulo %}Frete{% endblock %}
+
+{% block conteudo %}
+  <h2>Frete</h2>
+
+  {% if msg %}
+    <p class="sucesso">{{ msg }}</p>
+  {% endif %}
+
+  <p class="dica">Na hora de pagar, o site calcula a <b>distância</b> entre a loja e o CEP do
+     cliente e cobra o preço da tabela abaixo.</p>
+
+  <!-- ===== 1. de onde saem as entregas ===== -->
+  <h3 class="titulo-bloco">1. Local da loja</h3>
+  <form class="caixa-envio" method="post" action="{{ url_for('frete') }}">
+    <input type="hidden" name="acao" value="loja">
+    {% if loja.lat is not none %}
+      <p class="frete-ok">&#10003; Localização salva{% if loja.cep %} (CEP {{ loja.cep|cep }}){% endif %}.
+        <a href="https://www.google.com/maps?q={{ loja.lat }},{{ loja.lon }}" target="_blank">Ver no mapa</a></p>
+    {% else %}
+      <p class="frete-aviso-admin">Cadastre o CEP da loja para o cálculo por km funcionar.
+        Enquanto isso, o cliente não consegue finalizar o pedido pelo site.</p>
+    {% endif %}
+    <div class="campos-lado">
+      <p>
+        <label for="l-cep">CEP da loja</label>
+        <input type="text" id="l-cep" name="cep" maxlength="9" inputmode="numeric"
+               value="{{ dados.get('cep', '') if acao == 'loja' else (loja.cep|cep) }}" placeholder="06010-000">
+        {% if erros.get('cep') %}<span class="erro">{{ erros['cep'] }}</span>{% endif %}
+      </p>
+      <p>
+        <label for="l-prazo">Prazo de entrega (opcional)</label>
+        <input type="text" id="l-prazo" name="prazo"
+               value="{{ dados.get('prazo', '') if acao == 'loja' else loja.prazo }}" placeholder="Ex.: 1 a 2 dias úteis">
+      </p>
+    </div>
+    <p>
+      <label for="l-coord">Ou, mais preciso: coordenadas do Google Maps (opcional)</label>
+      <input type="text" id="l-coord" name="coordenadas" value="{{ dados.get('coordenadas', '') }}"
+             placeholder="-23.5329, -46.7920">
+      <span class="dica">No Google Maps, clique com o botão direito em cima da loja e clique nos números que aparecem: eles são copiados.</span>
+      {% if erros.get('coordenadas') %}<span class="erro">{{ erros['coordenadas'] }}</span>{% endif %}
+    </p>
+    <button type="submit" class="botao">Salvar local da loja</button>
+  </form>
+
+  <!-- ===== 2. tabela de precos ===== -->
+  <h3 class="titulo-bloco">2. Tabela de preços por distância</h3>
+  {% if faixas %}
+    <table class="tabela-km">
+      <tr><th>Distância</th><th>Preço</th><th></th></tr>
+      {% set anterior = namespace(km=0) %}
+      {% for f in faixas %}
+        <tr>
+          <td>de {{ anterior.km|km }} até <b>{{ f['ate_km']|km }}</b></td>
+          <td>{% if f['preco'] %}R$ {{ f['preco']|brl }}{% else %}Grátis{% endif %}</td>
+          <td>
+            <form method="post" action="{{ url_for('excluir_frete', id_faixa=f['id']) }}"
+                  onsubmit="return confirm('Excluir a faixa até {{ f['ate_km']|km }}?');">
+              <button type="submit" class="link-perigo">excluir</button>
+            </form>
+          </td>
+        </tr>
+        {% set anterior.km = f['ate_km'] %}
+      {% endfor %}
+      <tr><td colspan="3" class="dica">Mais de {{ anterior.km|km }}: não entregamos.</td></tr>
+    </table>
+  {% else %}
+    <p class="vazio">Nenhuma faixa ainda. Exemplo: até 3 km = R$ 6,00 &middot; até 6 km = R$ 10,00 &middot;
+       até 10 km = R$ 15,00 &middot; até 15 km = R$ 20,00.</p>
+  {% endif %}
+
+  <form class="caixa-envio" method="post" action="{{ url_for('frete') }}">
+    <input type="hidden" name="acao" value="faixa">
+    <div class="campos-lado">
+      <p>
+        <label for="k-km">Até quantos km</label>
+        <input type="text" id="k-km" name="ate_km" inputmode="decimal"
+               value="{{ dados.get('ate_km', '') if acao == 'faixa' else '' }}" placeholder="Ex.: 5">
+        {% if erros.get('ate_km') %}<span class="erro">{{ erros['ate_km'] }}</span>{% endif %}
+      </p>
+      <p>
+        <label for="k-preco">Preço do frete (R$)</label>
+        <input type="text" id="k-preco" name="preco" inputmode="decimal"
+               value="{{ dados.get('preco', '') if acao == 'faixa' else '' }}" placeholder="Ex.: 8,00 (0 = grátis)">
+        {% if erros.get('preco') %}<span class="erro">{{ erros['preco'] }}</span>{% endif %}
+      </p>
+    </div>
+    <p class="dica">A distância é aproximada: linha reta até o CEP + 30%, que é mais ou menos o
+       caminho pelas ruas. Cadastrar a mesma distância de novo troca o preço dela.</p>
+    <button type="submit" class="botao">Adicionar à tabela</button>
+  </form>
+
+  <!-- testar um CEP -->
+  <form class="caixa-envio teste-frete" method="get" action="{{ url_for('frete') }}">
+    <p>
+      <label for="t-cep">Testar: quanto fica o frete para um CEP?</label>
+      <input type="text" id="t-cep" name="cep_teste" value="{{ cep_teste }}" maxlength="9"
+             inputmode="numeric" placeholder="03186-020">
+    </p>
+    <button type="submit" class="botao">Calcular</button>
+    {% if teste %}{% with calculo = teste %}{% include "_resultado_frete.html" %}{% endwith %}{% endif %}
+  </form>
+
+{% endblock %}

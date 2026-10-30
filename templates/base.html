@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- nome da pagina -->
   <title>{% block titulo %}Sistema de Cadastro{% endblock %}</title>
+  <!-- icone na aba do navegador (e na tela inicial do celular) -->
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='img/favicon-192.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
       <!-- fontes do logo: Poppins (textos) e Kaushan Script ("Quilombo") -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,6 +45,7 @@
       <a href="{{ url_for('eventos') }}">Eventos</a>
       <a href="{{ url_for('carrossel') }}">Carrossel</a>
       <a href="{{ url_for('sobre') }}">Sobre</a>
+      <a href="{{ url_for('frete') }}">Frete</a>
       <!-- Pedidos: o numero mostra quantos clientes avisaram que pagaram -->
       <a href="{{ url_for('pedidos') }}">Pedidos{% if pedidos_pendentes %} <span class="contador-pedidos">{{ pedidos_pendentes }}</span>{% endif %}</a>
       <a href="{{ url_for('admin_sair') }}" title="Sair da área do administrador">Sair</a>

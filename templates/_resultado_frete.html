@@ -1,0 +1,15 @@
+{# resultado do calculo de frete (usado com include, com a variavel "calculo") #}
+{% if calculo.preco is not none %}
+  <p class="frete-resultado">Distância aproximada: <b>{{ calculo.km|km }}</b><br>
+    Frete: <b>{% if calculo.preco %}R$ {{ calculo.preco|brl }}{% else %}Grátis{% endif %}</b>
+    {% if calculo.prazo %}&middot; {{ calculo.prazo }}{% endif %}</p>
+{% elif calculo.motivo == 'longe' %}
+  <p class="frete-resultado frete-aviso">Este CEP fica a <b>{{ calculo.km|km }}</b> da loja.
+    Entregamos até {{ calculo.maximo|km if calculo.maximo else '-' }}.
+    <a href="https://wa.me/{{ whatsapp }}" target="_blank">Fale com a gente pelo WhatsApp</a>.</p>
+{% elif calculo.motivo == 'cep' %}
+  <p class="frete-resultado frete-aviso">Não conseguimos achar este CEP agora. Confira o número
+    ou tente de novo em alguns minutos.</p>
+{% else %}
+  <p class="frete-resultado frete-aviso">O cálculo de entrega ainda não está disponível.</p>
+{% endif %}

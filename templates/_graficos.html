@@ -1,0 +1,298 @@
+{# aba Graficos da pagina Pedidos (usado com include, com a variavel "graficos").
+   So contam pedidos PAGOS. As barras sao feitas so com HTML e CSS:
+   a largura de cada uma e a porcentagem em relacao ao doce que mais vendeu. #}
+{% set g = graficos %}
+
+<!-- duas abas dentro de Graficos -->
+<nav class="subabas" aria-label="Tipo de gráfico">
+  <a href="{{ url_for('pedidos', aba='graficos') }}" class="{% if g.visao == 'mes' %}ativo{% endif %}">Vendas por mês</a>
+  <a href="{{ url_for('pedidos', aba='graficos', visao='ano') }}" class="{% if g.visao == 'ano' %}ativo{% endif %}">Vendas do ano</a>
+</nav>
+
+{% if g.visao == 'mes' %}
+{# ================= VENDAS POR MES: numeros e barras do mes escolhido ================= #}
+{% set maior = (g.mais[0].qtd if g.mais else 0) %}
+
+<!-- select do mes, no canto direito (igual ao Historico) -->
+<div class="historico-topo">
+  <p class="resumo-mes">Vendas {% if mes %}de <b>{{ (meses|selectattr('valor', 'equalto', mes)|first or {'nome': mes}).nome }}</b>{% else %}de <b>todos os meses</b>{% endif %}</p>
+  {% if meses %}
+    <form class="meses-pedidos" method="get" action="{{ url_for('pedidos') }}">
+      <input type="hidden" name="aba" value="graficos">
+      <select name="mes" onchange="this.form.submit()" aria-label="Escolher o mês das vendas">
+        <option value="">Todos os meses</option>
+        {% for m in meses %}
+          <option value="{{ m.valor }}" {% if mes == m.valor %}selected{% endif %}>{{ m.nome }}</option>
+        {% endfor %}
+      </select>
+      <noscript><button type="submit">Ver</button></noscript>
+    </form>
+  {% endif %}
+</div>
+
+{% if not g.qtd_pedidos %}
+  <p class="vazio">Nenhuma venda confirmada {{ 'neste mês' if mes else 'ainda' }}.
+     Os gráficos aparecem quando houver pedidos com o pagamento confirmado.</p>
+{% else %}
+
+  <!-- numeros principais -->
+  <div class="quadros-resumo">
+    <div class="quadro"><span>Pedidos pagos</span><b>{{ g.qtd_pedidos }}</b></div>
+    <div class="quadro"><span>Faturamento</span><b>R$ {{ g.faturamento|brl }}</b></div>
+    <div class="quadro"><span>Doces vendidos</span><b>{{ g.unidades }}</b></div>
+    <div class="quadro"><span>Valor médio por pedido</span><b>R$ {{ g.ticket_medio|brl }}</b></div>
+  </div>
+  <p class="dica">O faturamento inclui o frete. Os gráficos contam as unidades de cada doce.</p>
+
+  <div class="graficos">
+    {% for titulo, subtitulo, lista in [
+         ('Mais vendidos', 'Os 5 doces que mais venderam (unidades)', g.mais),
+         ('Menos vendidos', 'Os 5 doces que menos venderam, incluindo os que não venderam', g.menos)] %}
+      <figure class="grafico">
+        <figcaption>
+          <h3>{{ titulo }}</h3>
+          <p>{{ subtitulo }}</p>
+        </figcaption>
+        <ol class="barras">
+          {% for v in lista %}
+            {# a barra do doce que mais vendeu ocupa a largura toda; as outras, proporcional #}
+            {% set largura = (v.qtd / maior * 100) if maior else 0 %}
+            <li class="barra-linha" tabindex="0">
+              <span class="barra-nome">{{ v.nome }}</span>
+              <span class="barra-trilho">
+                <span class="barra" style="width: {{ '%.1f'|format(largura) }}%"></span>
+                <span class="barra-valor">{{ v.qtd }}{% if not v.qtd %} <small>(sem vendas)</small>{% endif %}</span>
+              </span>
+              <!-- balao que aparece ao passar o mouse (ou tocar) -->
+              <span class="barra-dica" role="tooltip">
+                <b>{{ v.nome }}</b><br>
+                {{ v.qtd }} unidade(s) &middot; R$ {{ v.valor|brl }}
+              </span>
+            </li>
+          {% endfor %}
+        </ol>
+      </figure>
+    {% endfor %}
+  </div>
+
+{% endif %}
+
+{% if g.qtd_pedidos %}
+  <!-- os mesmos numeros em tabela (todos os doces) -->
+  <details class="tabela-vendas">
+    <summary>Ver a tabela com todos os doces</summary>
+    <table>
+      <tr><th>Doce</th><th>Unidades</th><th>Vendido (R$)</th></tr>
+      {% for v in g.tabela %}
+        <tr><td>{{ v.nome }}</td><td>{{ v.qtd }}</td><td>R$ {{ v.valor|brl }}</td></tr>
+      {% endfor %}
+    </table>
+  </details>
+{% endif %}
+
+{% else %}
+{# ================= VENDAS DO ANO: linhas de janeiro a dezembro ================= #}
+{% set L = g.linhas %}
+
+<!-- select do ano, no canto direito -->
+<div class="historico-topo">
+  <p class="resumo-mes">Vendas de <b>{{ g.ano }}</b>{% if L.tem_vendas %}: {{ L.total_pedidos }} pedido(s) pago(s) &middot;
+     {{ L.total_qtd }} doces &middot; <b>R$ {{ L.total_valor|brl }}</b>{% endif %}</p>
+  {% if g.anos %}
+    <form class="meses-pedidos" method="get" action="{{ url_for('pedidos') }}">
+      <input type="hidden" name="aba" value="graficos">
+      <input type="hidden" name="visao" value="ano">
+      <select name="ano" onchange="this.form.submit()" aria-label="Escolher o ano">
+        {% for a in g.anos %}
+          <option value="{{ a }}" {% if a == g.ano %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+      <noscript><button type="submit">Ver</button></noscript>
+    </form>
+  {% endif %}
+</div>
+
+{% if not L.tem_vendas %}
+  <p class="vazio">Nenhuma venda confirmada em {{ g.ano }}.
+     Os gráficos aparecem quando houver pedidos com o pagamento confirmado.</p>
+{% else %}
+  <p class="dica">Todas as vendas da loja somadas, de janeiro a dezembro. Passe o mouse (ou toque) no
+     gráfico para ver os números de cada mês.</p>
+
+  <div class="graficos graficos-linha">
+    <figure class="grafico">
+      <figcaption><h3>Doces vendidos por mês</h3><p>Total de unidades vendidas</p></figcaption>
+      <div class="grafico-linhas" data-campo="qtd" role="img"
+           aria-label="Gráfico de linha: total de unidades vendidas por mês"></div>
+    </figure>
+    <figure class="grafico">
+      <figcaption><h3>Valor das vendas por mês</h3><p>Total recebido em reais (com o frete)</p></figcaption>
+      <div class="grafico-linhas" data-campo="valor" role="img"
+           aria-label="Gráfico de linha: valor total das vendas por mês"></div>
+    </figure>
+  </div>
+
+  <!-- os numeros dos graficos de linha em tabela -->
+  <details class="tabela-vendas">
+    <summary>Ver os números mês a mês</summary>
+    <div class="tabela-rolagem">
+      <table>
+        <tr><th></th>{% for m in L.meses %}<th>{{ m.rotulo }}</th>{% endfor %}</tr>
+        {# "-" = mes que ainda nao chegou #}
+        <tr><td>Pedidos pagos</td>{% for v in L.pedidos %}<td>{{ '-' if v is none else v }}</td>{% endfor %}</tr>
+        <tr><td>Doces vendidos</td>{% for v in L.qtd %}<td>{{ '-' if v is none else v }}</td>{% endfor %}</tr>
+        <tr><td>Valor (R$)</td>{% for v in L.valor %}<td>{{ '-' if v is none else v|brl }}</td>{% endfor %}</tr>
+      </table>
+    </div>
+  </details>
+
+  <!-- dados para o JavaScript desenhar as linhas -->
+  <script id="dados-linhas" type="application/json">{{ L|tojson }}</script>
+  <script>
+    (function () {
+      var dados = JSON.parse(document.getElementById('dados-linhas').textContent);
+      var COR = '#c35a1e';              // terracota da marca (uma linha so: as vendas gerais)
+      var SVG = 'http://www.w3.org/2000/svg';
+
+      function brl(v) {
+        return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+      function formatar(v, campo) {
+        return campo === 'valor' ? brl(v) : v + (v === 1 ? ' doce' : ' doces');
+      }
+
+      // numeros "redondos" para o eixo y (0, 5, 10... ou 0, 200, 400...)
+      function escalaY(maximo) {
+        if (maximo <= 0) return { topo: 4, passo: 1 };
+        var bruto = maximo / 4;
+        var potencia = Math.pow(10, Math.floor(Math.log10(bruto)));
+        var passo = [1, 2, 2.5, 5, 10].map(function (m) { return m * potencia; })
+                                       .find(function (p) { return p >= bruto; });
+        if (passo < 1) passo = 1;
+        return { topo: Math.ceil(maximo / passo) * passo, passo: passo };
+      }
+
+      function criar(tag, atributos, pai) {
+        var el = document.createElementNS(SVG, tag);
+        for (var k in atributos) el.setAttribute(k, atributos[k]);
+        if (pai) pai.appendChild(el);
+        return el;
+      }
+
+      function desenhar(caixa) {
+        var campo = caixa.dataset.campo;
+        var todos = dados[campo];
+        // meses que ainda nao chegaram vem como null: a linha vai so ate o mes atual
+        var valores = todos.filter(function (v) { return v !== null; });
+        var ultimo = valores.length - 1;
+        caixa.textContent = '';
+
+        var area = document.createElement('div');
+        area.className = 'area-linhas';
+        caixa.appendChild(area);
+
+        var W = Math.max(area.clientWidth, 280), H = 240;
+        var m = { esq: campo === 'valor' ? 74 : 40, dir: 14, cima: 16, baixo: 28 };
+        var largura = W - m.esq - m.dir, altura = H - m.cima - m.baixo;
+        var n = dados.meses.length;
+
+        var esc = escalaY(Math.max.apply(null, valores.concat([0])));
+        var x = function (i) { return m.esq + (n === 1 ? largura / 2 : i * largura / (n - 1)); };
+        var y = function (v) { return m.cima + altura - v / esc.topo * altura; };
+
+        var svg = criar('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H }, area);
+
+        // linhas de grade (finas e claras) e numeros do eixo y
+        for (var v = 0; v <= esc.topo + 1e-9; v += esc.passo) {
+          criar('line', { x1: m.esq, x2: W - m.dir, y1: y(v), y2: y(v), class: 'grade' }, svg);
+          criar('text', { x: m.esq - 8, y: y(v) + 4, 'text-anchor': 'end', class: 'eixo' }, svg)
+            .textContent = campo === 'valor' ? brl(v).replace(',00', '') : v;
+        }
+        // meses no eixo x (pula alguns se a tela for estreita)
+        var pulo = largura / n < 34 ? 2 : 1;
+        dados.meses.forEach(function (mes, i) {
+          if (i % pulo && i !== n - 1) return;
+          criar('text', { x: x(i), y: H - 8, 'text-anchor': 'middle', class: 'eixo' }, svg)
+            .textContent = mes.rotulo;
+        });
+
+        // area clarinha embaixo da linha + a linha + bolinha em cada mes
+        var pontos = valores.map(function (val, j) { return x(j) + ',' + y(val); });
+        criar('polygon', { points: x(0) + ',' + y(0) + ' ' + pontos.join(' ') + ' ' + x(ultimo) + ',' + y(0),
+                           fill: COR, 'fill-opacity': 0.1 }, svg);
+        criar('polyline', { points: pontos.join(' '), fill: 'none', stroke: COR, 'stroke-width': 2,
+                            'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+        valores.forEach(function (val, j) {
+          criar('circle', { cx: x(j), cy: y(val), r: 4, fill: COR, stroke: '#fff', 'stroke-width': 2 }, svg);
+        });
+
+        // linha vertical que acompanha o mouse + bolinha maior + balao do mes
+        var mira = criar('line', { y1: m.cima, y2: m.cima + altura, class: 'mira' }, svg);
+        var marca = criar('circle', { r: 6, fill: COR, stroke: '#fff', 'stroke-width': 2, class: 'marca' }, svg);
+        var balao = document.createElement('div');
+        balao.className = 'balao-linhas';
+        area.appendChild(balao);
+
+        function mostrar(i) {
+          mira.setAttribute('x1', x(i)); mira.setAttribute('x2', x(i));
+          mira.style.opacity = 1;
+          marca.setAttribute('cx', x(i)); marca.setAttribute('cy', y(valores[i]));
+          marca.style.opacity = 1;
+          balao.textContent = '';
+          var titulo = document.createElement('b');
+          titulo.textContent = dados.meses[i].nome;
+          var numero = document.createElement('strong');
+          numero.className = 'balao-numero';
+          numero.textContent = formatar(valores[i], campo);
+          var pedidos = document.createElement('div');
+          pedidos.textContent = dados.pedidos[i] + (dados.pedidos[i] === 1 ? ' pedido pago' : ' pedidos pagos');
+          balao.appendChild(titulo); balao.appendChild(numero); balao.appendChild(pedidos);
+          balao.style.display = 'block';
+          // balao do lado direito do mouse; perto da borda, vai para a esquerda
+          var esquerda = x(i) + 12;
+          if (esquerda + balao.offsetWidth > W) esquerda = x(i) - balao.offsetWidth - 12;
+          balao.style.left = Math.max(0, esquerda) + 'px';
+          caixa.dataset.indice = i;
+        }
+        function esconder() {
+          mira.style.opacity = 0;
+          marca.style.opacity = 0;
+          balao.style.display = 'none';
+        }
+        esconder();
+
+        // area invisivel que pega o mouse/dedo: acha o mes mais perto
+        var alvo = criar('rect', { x: m.esq - 10, y: 0, width: largura + 20, height: H,
+                                   fill: 'transparent' }, svg);
+        function mover(evento) {
+          var r = svg.getBoundingClientRect();
+          var i = n === 1 ? 0 : Math.round((evento.clientX - r.left - m.esq) / (largura / (n - 1)));
+          mostrar(Math.max(0, Math.min(ultimo, i)));
+        }
+        alvo.addEventListener('pointermove', mover);
+        alvo.addEventListener('pointerdown', mover);
+        alvo.addEventListener('pointerleave', esconder);
+
+        // teclado: Tab chega no grafico e as setas trocam o mes
+        area.tabIndex = 0;
+        area.onkeydown = function (e) {
+          var atual = caixa.dataset.indice ? +caixa.dataset.indice : ultimo;
+          if (e.key === 'ArrowLeft') { mostrar(Math.max(0, atual - 1)); e.preventDefault(); }
+          if (e.key === 'ArrowRight') { mostrar(Math.min(ultimo, atual + 1)); e.preventDefault(); }
+        };
+        area.onfocus = function () { mostrar(caixa.dataset.indice ? +caixa.dataset.indice : ultimo); };
+        area.onblur = esconder;
+      }
+
+      var caixas = document.querySelectorAll('.grafico-linhas');
+      function desenharTodos() { caixas.forEach(desenhar); }
+      desenharTodos();
+      // redesenha se a janela mudar de tamanho (ex.: virar o celular)
+      var espera;
+      window.addEventListener('resize', function () {
+        clearTimeout(espera); espera = setTimeout(desenharTodos, 150);
+      });
+    })();
+  </script>
+{% endif %}
+{% endif %}

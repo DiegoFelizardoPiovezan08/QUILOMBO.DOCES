@@ -77,6 +77,17 @@
           <strong>R$ {{ total|brl }}</strong>
         </p>
 
+        <!-- calcular o frete pelo CEP (distancia ate a loja) -->
+        <form class="calcular-frete" method="get" action="{{ url_for('loja_carrinho') }}">
+          <label for="cep-frete">Calcular frete</label>
+          <div>
+            <input type="text" id="cep-frete" name="cep" value="{{ cep_frete or '' }}"
+                   maxlength="9" inputmode="numeric" placeholder="00000-000">
+            <button type="submit" class="btn btn-contorno">OK</button>
+          </div>
+        </form>
+        {% if calculo %}{% include "_resultado_frete.html" %}{% endif %}
+
         {% if tem_falta %}
           <!-- algum doce esgotou depois de entrar no carrinho -->
           <button type="button" class="btn btn-esgotado btn-grande" disabled>Pagar com Pix</button>
@@ -87,7 +98,7 @@
           </a>
         {% endif %}
 
-        <p class="dica">Geramos um QR Code Pix com o valor do pedido.</p>
+        <p class="dica">O frete é calculado pela distância até a loja.</p>
 
         <a class="btn btn-contorno" href="{{ url_for('loja_produtos') }}">Continuar comprando</a>
 
