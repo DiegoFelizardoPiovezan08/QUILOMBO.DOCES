@@ -15,7 +15,8 @@
   <!-- botoes para cadastrar novo doce e criar categoria (um do lado do outro) -->
   <p class="botoes-topo">
     <a class="botao" href="{{ url_for('novo') }}">+ Cadastrar novo doce</a>
-    <a class="botao botao-secundario" href="{{ url_for('categorias') }}">+ Nova categoria</a>
+    <a class="botao botao-secundario" href="{{ url_for('categorias') }}">Categorias dos produtos</a>
+    <a class="botao botao-secundario" href="{{ url_for('pagina_inicial') }}">Página inicial da loja</a>
   </p>
 
   <!-- barra de pesquisa: filtra a lista pelo nome do doce -->
@@ -39,7 +40,6 @@
         <th>Nome</th>
         <th>Preco</th>
         <th>Categoria</th>
-        <th>Destaque</th>
         <th></th>
       </tr>
       {% for p in doces %}
@@ -55,16 +55,6 @@
         <td><a href="{{ url_for('detalhe', id_doce=p['id']) }}">{{ p['nome'] }}</a></td>
         <td>{{ p['preco'] }} </td>
         <td>{{ p['categoria'] or '—' }}</td>
-                <td>
-          <!-- estrela: um clique coloca ou tira o doce dos Destaques da loja -->
-          <form method="post" action="{{ url_for('alternar_destaque', id_doce=p['id']) }}">
-            {% if p['destaque'] %}
-              <button type="submit" class="btn-destaque ativo" title="Tirar dos Destaques">&#9733; Em destaque</button>
-            {% else %}
-              <button type="submit" class="btn-destaque" title="Mostrar nos Destaques">&#9734; Destacar</button>
-            {% endif %}
-          </form>
-        </td>
         <td>
           <!-- caso deseje editar/excluir -->
           <a href="{{ url_for('editar', id_doce=p['id']) }}">editar</a>
@@ -84,4 +74,4 @@
   <!--se nao tiver nenhum doce cadastrado ainda -->
     <p class="vazio">Nenhum doce cadastrado ainda.</p>
   {% endif %}
-{% endblock %}
+{% endblock %}  

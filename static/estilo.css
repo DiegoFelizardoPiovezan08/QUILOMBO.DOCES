@@ -254,28 +254,6 @@ td {
 
 tr:hover td { background: rgba(242, 228, 200, 0.45); }
 
-/* botao da estrela (Destaque) na lista de doces */
-.btn-destaque {
-  background: transparent;
-  color: var(--texto-suave);
-  border: 2px solid var(--borda);
-  border-radius: 999px;
-  padding: 5px 12px;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-.btn-destaque:hover {
-  background: var(--areia);
-  border-color: var(--ouro);
-  color: var(--cacau);
-}
-.btn-destaque.ativo {
-  background: var(--ouro);
-  border-color: var(--ouro);
-  color: var(--cacau);
-}
-.btn-destaque.ativo:hover { background: var(--ouro-hover); }
-
 /* ---------- aba Pedidos ---------- */
 
 /* abas "Pendentes" e "Historico" */
@@ -817,6 +795,80 @@ form.teste-frete { display: block; }     /* um campo embaixo do outro (nao em li
 }
 .caixa-envio input[type="file"],
 .caixa-envio input[type="text"] { background: var(--branco); }
+
+/* aba Pagina inicial: secoes na ordem da loja */
+.lista-secoes { list-style: none; padding: 0; margin: 16px 0 8px; }
+.lista-secoes li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  background: var(--areia);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+.secao-posicao { font-weight: 700; font-size: 1.1rem; color: var(--terracota); min-width: 32px; }
+.secao-info { flex: 1; min-width: 0; }
+.secao-info b { display: block; }
+.secao-info small { color: var(--texto-suave); }
+.secao-acoes { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.secao-acoes form { margin: 0; }
+.seta-ordem {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 1.1rem;
+  background: #fff;
+  color: var(--cacau);
+  border: 1px solid var(--borda);
+}
+.seta-ordem:hover:not(:disabled) { background: var(--ouro); border-color: var(--ouro); }
+.seta-ordem:disabled { opacity: 0.35; cursor: default; }
+.ordem-categoria { display: flex; align-items: center; gap: 6px; }
+.ordem-categoria form { margin: 0; }
+
+/* escolher os doces de uma colecao: cartoezinhos com foto e caixinha */
+.rotulo-doces { font-weight: 600; margin-bottom: 8px; }
+.escolher-doces {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.doce-opcao {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  margin: 0;
+  background: #fff;
+  border: 2px solid var(--borda);
+  border-radius: var(--raio);
+  font-weight: 500;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.doce-opcao:has(input:checked) { border-color: var(--terracota); background: #fdf1dc; }
+.doce-opcao input { accent-color: var(--terracota); flex-shrink: 0; }
+.doce-opcao img,
+.doce-sem-foto {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.doce-sem-foto {
+  display: grid;
+  place-items: center;
+  background: var(--areia-escura);
+  color: var(--raiz);
+  font-weight: 700;
+}
+#nome-colecao { max-width: 420px; }
 
 /* carrossel do admin: versao quadrada (celular) embaixo de cada foto */
 .foto-celular {

@@ -62,14 +62,6 @@
     </p>
     
     <p>
-      <!-- destaque: marcado = aparece nos Destaques da pagina inicial da loja -->
-      <label class="check">
-        <input type="checkbox" name="destaque" value="1" {% if dados.get('destaque') %}checked{% endif %}>
-        &#9733; Mostrar nos Destaques da página inicial
-      </label>
-      <span class="dica">Todos os doces aparecem na aba Produtos. Só os marcados aparecem em Destaques.</span>
-    </p>
-    <p>
       <!-- foto do doce (opcional) -->
       <label for="imagem">Foto</label>
       {% if dados.get('imagem') %}

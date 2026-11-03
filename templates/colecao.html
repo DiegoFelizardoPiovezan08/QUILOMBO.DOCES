@@ -1,0 +1,19 @@
+<!-- editar uma colecao da pagina inicial: nome e doces -->
+{% extends "base.html" %}
+
+{% block titulo %}Editar {{ secao['nome'] }}{% endblock %}
+
+{% block conteudo %}
+  <h2>Editar coleção</h2>
+
+  <p><a href="{{ url_for('pagina_inicial') }}">&larr; Voltar para a página inicial</a></p>
+
+  <form class="caixa-envio" method="post" action="{{ url_for('editar_colecao', id_secao=secao['id']) }}">
+    {% if erro %}<p class="erro-geral">{{ erro }}</p>{% endif %}
+    {% include "_escolher_doces.html" %}
+    <p>
+      <button type="submit" class="botao">Salvar</button>
+      <a href="{{ url_for('pagina_inicial') }}">Cancelar</a>
+    </p>
+  </form>
+{% endblock %}

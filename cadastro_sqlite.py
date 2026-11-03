@@ -128,6 +128,32 @@ def conectar_banco():
     if "imagem_celular" not in colunas_carrossel:
         conn.execute("ALTER TABLE carrossel ADD COLUMN imagem_celular TEXT")
 
+    # SECOES DA PAGINA INICIAL da loja, na ordem em que aparecem (posicao 1 = no
+    # topo). tipo: "mais_vendidos" (calculado pelas vendas) ou "colecao"
+    # (o admin escolhe os doces).
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS secoes (
+                id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome     TEXT    NOT NULL,
+                tipo     TEXT    NOT NULL DEFAULT 'colecao',
+                posicao  INTEGER NOT NULL
+            )
+        ''')
+    # quais doces estao em cada colecao
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS secao_doces (
+                secao_id  INTEGER NOT NULL,
+                doce_id   INTEGER NOT NULL,
+                PRIMARY KEY (secao_id, doce_id)
+            )
+        ''')
+    # "Mais vendidos" ja vem cadastrada (so pode mudar de lugar)
+    if conn.execute('SELECT COUNT(*) FROM secoes').fetchone()[0] == 0:
+        conn.execute("INSERT INTO secoes (nome, tipo, posicao) VALUES ('Mais vendidos', 'mais_vendidos', 1)")
+        conn.commit()
+    # a secao "Destaques" saiu da loja (as colecoes fazem esse papel agora)
+    conn.execute("DELETE FROM secoes WHERE tipo = 'destaques'")
+
     # coluna "email" em clientes: usada no "Esqueci minha senha"
     if "email" not in colunas:
         conn.execute("ALTER TABLE clientes ADD COLUMN email TEXT")
@@ -173,7 +199,8 @@ def conectar_banco():
     if "descricao" not in colunas:
         conn.execute("ALTER TABLE doces ADD COLUMN descricao TEXT")
         
-    # coluna "destaque" em doces: 1 = aparece nos Destaques da pagina inicial
+    # coluna "destaque" em doces: era a estrela dos Destaques (nao e mais usada;
+    # fica no banco so para os bancos antigos continuarem funcionando)
     if "destaque" not in colunas:
         conn.execute("ALTER TABLE doces ADD COLUMN destaque INTEGER NOT NULL DEFAULT 0")
 
@@ -199,6 +226,14 @@ def conectar_banco():
                 senha_hash  TEXT    NOT NULL
             )
         ''')
+
+    # coluna "posicao" em categorias: a ordem em que aparecem na pagina
+    # Produtos da loja (1 = primeira). Banco antigo: comeca em ordem alfabetica
+    colunas_categorias = [c["name"] for c in conn.execute("PRAGMA table_info(categorias)")]
+    if "posicao" not in colunas_categorias:
+        conn.execute("ALTER TABLE categorias ADD COLUMN posicao INTEGER NOT NULL DEFAULT 0")
+        for n, cat in enumerate(conn.execute('SELECT id FROM categorias ORDER BY nome').fetchall(), 1):
+            conn.execute('UPDATE categorias SET posicao = ? WHERE id = ?', (n, cat["id"]))
 
     # coluna "categoria_id" em doces: de qual categoria e o doce (vazio = sem categoria)
     if "categoria_id" not in colunas:

@@ -662,24 +662,6 @@ a { text-decoration: none; }
   text-transform: uppercase;
 }
 
-/* posicao na secao "Mais vendidos" (1o, 2o, 3o...), no canto direito da foto */
-.selo-ranking {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 1;
-  min-width: 42px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--ouro);
-  color: var(--raiz);
-  font-family: var(--fonte-texto);
-  font-size: 0.95rem;
-  font-weight: 800;
-  text-align: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-}
-
 .esgotado .card-img img,
 .produto-img.esgotado img { filter: grayscale(0.7); opacity: 0.75; }
 
@@ -1351,35 +1333,90 @@ a { text-decoration: none; }
 .selo-pago { background: var(--sucesso-bg); color: var(--sucesso-txt); }
 .selo-cancelado { background: var(--erro-bg); color: var(--perigo); }
 
-/* ---------- rodape ---------- */
+/* ---------- rodape ----------
+   em cima: marca + 3 colunas (Navegue, Fale com a gente, Compre tranquilo);
+   embaixo: faixa com o (c) e a cidade */
 
 .rodape {
   position: relative;
   overflow: hidden;          /* os desenhos nao passam do rodape */
   background: var(--raiz);
   color: var(--areia);
-  text-align: center;
-  padding: 12px 20px;
-  font-size: 0.85rem;
+  border-top: 4px solid var(--ouro);
+  font-size: 0.92rem;
 }
-.rodape p { margin: 2px 0; }
-.rodape a { color: var(--ouro); }
-.rodape a:hover { color: var(--areia); }
+.rodape a { color: var(--areia); text-decoration: none; }
+.rodape a:hover { color: var(--ouro); }
 
-/* desenhos da apresentacao nos cantos de baixo do rodape */
+/* desenhos da apresentacao nos cantos de baixo do rodape (bem suaves) */
 .rodape-ornamento {
   position: absolute;
   bottom: 0;
-  width: 160px;
+  width: 200px;
+  opacity: 0.35;
   pointer-events: none;
 }
 .rodape-ornamento.esquerda { left: 0; transform: scaleY(-1); }
 .rodape-ornamento.direita { right: 0; transform: rotate(180deg); }
-.rodape > p, .rodape-logo { position: relative; }
 
-/* logo e slogan "Doces com historia." no rodape */
-.rodape-logo { display: block; width: 40px; margin: 0 auto 2px; }
-.rodape-slogan { font-family: var(--fonte-marca); font-size: 1.1rem; }
+.rodape-conteudo {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  gap: 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px 28px;
+}
+
+/* marca: logo + "Quilombo DOCES" (igual ao topo, menor) */
+.rodape-logo { display: inline-flex; align-items: center; gap: 10px; }
+.rodape-logo img { width: 52px; height: 52px; }
+.rodape-logo > span { display: flex; flex-direction: column; align-items: flex-end; line-height: 1; }
+.rodape-nome { font-family: var(--fonte-marca); font-size: 1.8rem; color: var(--areia); }
+.rodape-sub {
+  font-weight: 300;
+  font-size: 0.85rem;
+  letter-spacing: 0.25em;
+  margin-right: -0.25em;
+  text-transform: uppercase;
+  color: var(--ouro);
+}
+.rodape-slogan { margin: 14px 0 6px; font-family: var(--fonte-marca); font-size: 1.25rem; color: var(--ouro); }
+.rodape-texto { margin: 0; max-width: 300px; line-height: 1.6; opacity: 0.85; }
+
+/* colunas de links */
+.rodape-coluna { display: flex; flex-direction: column; gap: 10px; }
+.rodape-coluna h4 {
+  margin: 4px 0 6px;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ouro);
+}
+.rodape-coluna p { margin: 0; }
+.rodape-icone { display: inline-flex; align-items: center; gap: 10px; }
+.rodape-icone svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* faixa de baixo */
+.rodape-base {
+  position: relative;
+  margin: 0;
+  padding: 14px 20px;
+  border-top: 1px solid rgba(242, 228, 200, 0.18);
+  text-align: center;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
 
 /* ---------- telas um pouco menores (notebook) ----------
    ornamentos menores para os desenhos de conta e carrinho caberem
@@ -1428,7 +1465,12 @@ a { text-decoration: none; }
   .logo-nome { font-size: 1.35rem; }
   .logo-sub { font-size: 0.85rem; }
 
-  .rodape-ornamento { width: 100px; }
+  /* rodape no celular: marca em cima e as colunas uma embaixo da outra */
+  .rodape-ornamento { width: 110px; }
+  .rodape-conteudo { grid-template-columns: 1fr 1fr; gap: 26px 16px; padding: 30px 20px 22px; }
+  .rodape-marca { grid-column: 1 / -1; text-align: center; }
+  .rodape-texto { margin: 0 auto; }
+  .rodape-coluna:last-child { grid-column: 1 / -1; }
 
   /* carrossel no celular: legenda, setas e bolinhas menores (a foto
      continua inteira, so que menor) */
@@ -1473,10 +1515,7 @@ a { text-decoration: none; }
   .card-corpo .btn { padding: 7px 4px; font-size: 0.72rem; }
   .grade-lista .card-corpo form { margin-top: auto; }
   .grade-lista .card-corpo form .btn { width: 100%; }
-  .selo-esgotado,
-  .selo-ranking { top: 8px; font-size: 0.72rem; padding: 3px 8px; min-width: 0; }
-  .selo-esgotado { left: 8px; }
-  .selo-ranking { right: 8px; }
+  .selo-esgotado { top: 8px; left: 8px; font-size: 0.72rem; padding: 3px 8px; }
 
   .carrinho { grid-template-columns: 1fr; }
   .pagamento { grid-template-columns: 1fr; }
@@ -1547,7 +1586,8 @@ a { text-decoration: none; }
   text-transform: uppercase;
 }
 .btn-adicionar:hover { background: var(--cacau); color: var(--areia); }
-.btn-adicionar svg { width: 18px; height: 18px; flex-shrink: 0; }
+.btn-adicionar svg { width: 20px; height: 20px; flex-shrink: 0; }
+.btn-adicionar:hover .preencher { fill: currentColor; }   /* carrinho cheio ao passar o mouse */
 .card-corpo .btn-esgotado { width: 100%; background: transparent; border: 2px solid var(--borda); }
 
 /* sem cantos arredondados em nada (fotos, botoes, caixas, campos...) */
@@ -1564,10 +1604,11 @@ a { text-decoration: none; }
   .card-corpo h3 { font-size: 0.82rem; }
   .card-corpo .preco { font-size: 0.95rem; margin: 2px 0 8px; }
   .btn-adicionar { padding: 8px 4px; gap: 6px; font-size: 0.72rem; }
-  .btn-adicionar svg { width: 15px; height: 15px; }
+  .btn-adicionar svg { width: 16px; height: 16px; }
 
-  /* carrossel quadrado e grande quando todas as fotos tem a versao do celular */
-  .carrossel-quadrado .carrossel-slides { aspect-ratio: 1 / 1; }
+  /* carrossel maior no celular quando as fotos tem a versao do celular:
+     formato 5:4, um pouco mais baixo que um quadrado (foto 1080 x 864) */
+  .carrossel-quadrado .carrossel-slides { aspect-ratio: 5 / 4; }
 
   /* carrossel de ponta a ponta da tela (como na Dengo): passa por cima do
      espaco de 20px dos lados da pagina, mas continua afastado do topo */

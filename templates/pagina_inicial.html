@@ -1,0 +1,62 @@
+<!-- aba pagina inicial: secoes da loja (Mais vendidos e colecoes),
+     na ordem em que aparecem; quanto mais em cima, mais destaque -->
+{% extends "base.html" %}
+
+{% block titulo %}Página inicial da loja{% endblock %}
+
+{% block conteudo %}
+  <h2>Página inicial da loja</h2>
+
+  {% if msg %}
+    <p class="sucesso">{{ msg }}</p>
+  {% endif %}
+
+  <p><a href="{{ url_for('listar') }}">&larr; Voltar para os doces</a></p>
+
+  <p class="dica">Estas são as seções que aparecem embaixo do carrossel, <b>nesta ordem</b>.
+     Use as setas para mudar: quanto mais em cima, mais destaque a seção ganha.
+     Seção sem nenhum doce não aparece na loja.</p>
+
+  <!-- secoes na ordem da loja -->
+  <ol class="lista-secoes">
+    {% for s in secoes %}
+      <li>
+        <span class="secao-posicao">{{ loop.index }}º</span>
+        <div class="secao-info">
+          <b>{{ s['nome'] }}</b>
+          <small>
+            {% if s['tipo'] == 'mais_vendidos' %}Automática: os doces que mais venderam
+            {% else %}Coleção com {{ s['qtd'] }} doce(s){% endif %}
+          </small>
+        </div>
+        <div class="secao-acoes">
+          <!-- subir / descer -->
+          <form method="post" action="{{ url_for('mover_secao', id_secao=s['id'], direcao='subir') }}">
+            <button type="submit" class="seta-ordem" title="Subir" aria-label="Subir {{ s['nome'] }}"
+                    {% if loop.first %}disabled{% endif %}>&uarr;</button>
+          </form>
+          <form method="post" action="{{ url_for('mover_secao', id_secao=s['id'], direcao='descer') }}">
+            <button type="submit" class="seta-ordem" title="Descer" aria-label="Descer {{ s['nome'] }}"
+                    {% if loop.last %}disabled{% endif %}>&darr;</button>
+          </form>
+          {% if s['tipo'] == 'colecao' %}
+            <a href="{{ url_for('editar_colecao', id_secao=s['id']) }}">editar</a>
+            <form method="post" action="{{ url_for('excluir_colecao', id_secao=s['id']) }}"
+                  onsubmit="return confirm('Excluir a coleção {{ s['nome'] }}? Os doces continuam cadastrados.');">
+              <button type="submit" class="link-perigo">excluir</button>
+            </form>
+          {% endif %}
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
+
+  <!-- criar uma colecao nova -->
+  <h3 class="titulo-bloco">Nova coleção</h3>
+  <form class="caixa-envio" method="post" action="{{ url_for('pagina_inicial') }}">
+    {% if erro %}<p class="erro-geral">{{ erro }}</p>{% endif %}
+    {% include "_escolher_doces.html" %}
+    <p class="dica">A coleção nova entra no fim da página. Depois é só subir com a seta.</p>
+    <p><button type="submit" class="botao">Criar coleção</button></p>
+  </form>
+{% endblock %}

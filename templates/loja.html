@@ -6,9 +6,10 @@
 
   <!-- CARROSSEL: fotos cadastradas no administrador (aba "Carrossel").
        Sem nenhuma cadastrada, usa static/img/carrossel-1.jpg ate carrossel-4.jpg -->
-  {# no celular o carrossel fica quadrado (e maior) quando todas as fotos
-     tem a versao quadrada; senao mostra o banner deitado, menor #}
-  {% set formato_celular = slides and (slides|selectattr('celular')|list|length == slides|length) %}
+  {# no celular o carrossel fica quadrado (e maior) quando alguma foto tem a
+     versao quadrada. Foto sem versao do celular aparece inteira no quadrado,
+     com o fundo desfocado nas sobras #}
+  {% set formato_celular = slides and (slides|selectattr('celular')|list|length > 0) %}
   <section class="carrossel {% if formato_celular %}carrossel-quadrado{% endif %}"
            aria-roledescription="carrossel" aria-label="Fotos da Quilombo Doces">
 
@@ -18,7 +19,7 @@
         <figure class="slide {% if loop.first %}ativo{% endif %}"
         style="--foto: url('{{ url_for('static', filename=s['arquivo']) }}')">
         <picture>
-          {% if formato_celular %}
+          {% if s['celular'] %}
             <!-- celular: a versao quadrada da foto -->
             <source media="(max-width: 760px)" srcset="{{ url_for('static', filename=s['celular']) }}">
           {% endif %}
@@ -47,6 +48,29 @@
     {% endif %}
 
   </section>
+
+  {% if formato_celular %}
+  <script>
+    // celular: a altura do carrossel segue o formato da foto do celular
+    // (ex.: 1080 x 864), assim ela aparece inteira, sem faixas desfocadas.
+    // No computador continua o formato do banner (1060 x 380).
+    (function () {
+      var caixa = document.querySelector('.carrossel-slides');
+      var foto = caixa.querySelector('.slide img');
+      var celular = window.matchMedia('(max-width: 760px)');
+      function ajustar() {
+        if (celular.matches && foto.naturalWidth) {
+          caixa.style.aspectRatio = foto.naturalWidth + ' / ' + foto.naturalHeight;
+        } else {
+          caixa.style.aspectRatio = '';
+        }
+      }
+      foto.addEventListener('load', ajustar);     // troca de foto ao girar/redimensionar a tela
+      celular.addEventListener('change', ajustar);
+      if (foto.complete) ajustar();
+    })();
+  </script>
+  {% endif %}
 
   {% if slides|length > 1 %}
   <script>
@@ -90,39 +114,22 @@
   {% endif %}
 
 
-  <!-- DESTAQUES: os 4 primeiros doces (a rota manda so 4) -->
-  <div class="secao-cabecalho">
-    <h2 class="secao-titulo">Destaques</h2>
-    <a href="{{ url_for('loja_produtos') }}">Ver todos os produtos &rarr;</a>
-  </div>
-
-  {% if doces %}
+  <!-- SECOES: Mais vendidos e as colecoes criadas no admin (aba
+       "Pagina inicial"), na ordem escolhida la. Secao sem doce nao aparece. -->
+  {% for secao in secoes %}
+    <div class="secao-cabecalho">
+      <h2 class="secao-titulo">{{ secao.nome }}</h2>
+      {% if loop.first %}<a href="{{ url_for('loja_produtos') }}">Ver todos os produtos &rarr;</a>{% endif %}
+    </div>
     <div class="grade">
-      {% for p in doces %}
+      {% for p in secao.doces %}
         {% include "_card_doce.html" %}
       {% endfor %}
     </div>
   {% else %}
-    <p class="vazio">Em breve, novidades em destaque!</p>
+    <p class="vazio">Em breve, novidades por aqui!</p>
     <p class="centro"><a class="btn btn-principal" href="{{ url_for('loja_produtos') }}">Ver todos os produtos</a></p>
-  {% endif %}
-
-
-  <!-- MAIS VENDIDOS: os doces com mais unidades em pedidos pagos
-       (a conta fica na funcao mais_vendidos, no app.py). So aparece
-       depois que a loja tiver pelo menos uma venda confirmada -->
-  {% if vendidos %}
-    <div class="secao-cabecalho">
-      <h2 class="secao-titulo">Mais vendidos</h2>
-    </div>
-
-    <div class="grade">
-      {% for p in vendidos %}
-        {% set ranking = loop.index %}
-        {% include "_card_doce.html" %}
-      {% endfor %}
-    </div>
-  {% endif %}
+  {% endfor %}
 
 
 {% endblock %}

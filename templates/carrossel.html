@@ -21,8 +21,9 @@
     <p>
       <label for="imagem_celular">Versão para celular (opcional)</label>
       <input type="file" id="imagem_celular" name="imagem_celular" accept="image/*">
-      <span class="dica">Quadrada: 1080 x 1080 px. No celular, o carrossel fica grande, ocupando a largura da tela.
-        Ele só fica quadrado quando <b>todas</b> as fotos têm a versão para celular.</span>
+      <span class="dica">1080 x 864 px (um pouco mais larga do que alta). No celular, o carrossel fica grande,
+        ocupando a largura da tela. Envie a versão do celular de <b>todas</b> as fotos: a que não tiver
+        aparece menor, no meio.</span>
       {% if erros.get('imagem_celular') %}<span class="erro">{{ erros['imagem_celular'] }}</span>{% endif %}
     </p>
     <p>
@@ -53,7 +54,7 @@
               <img src="{{ url_for('static', filename='uploads/' ~ s['imagem_celular']) }}" alt="Versão para celular">
               <span class="dica">&#10003; Tem versão para celular. Trocar:</span>
             {% else %}
-              <span class="dica">Sem versão para celular. Enviar (1080 x 1080):</span>
+              <span class="dica">Sem versão para celular. Enviar (1080 x 864):</span>
             {% endif %}
             <input type="file" name="imagem_celular" accept="image/*" aria-label="Foto para celular">
             <button type="submit" class="botao">Salvar</button>

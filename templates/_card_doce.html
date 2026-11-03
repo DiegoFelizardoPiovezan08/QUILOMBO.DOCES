@@ -3,8 +3,6 @@
 <article class="card-doce {% if p['estoque'] <= 0 %}esgotado{% endif %}">
   <a class="card-img" href="{{ url_for('loja_produto', id_doce=p['id']) }}">
     {% if p['estoque'] <= 0 %}<span class="selo-esgotado">Esgotado</span>{% endif %}
-    {# so na secao "Mais vendidos": a posicao do doce (1o, 2o, 3o...) #}
-    {% if ranking is defined %}<span class="selo-ranking">{{ ranking }}º</span>{% endif %}
     {% if p['imagem'] %}
       <img src="{{ url_for('static', filename='uploads/' ~ p['imagem']) }}" alt="{{ p['nome'] }}">
     {% else %}
@@ -23,10 +21,12 @@
     {% else %}
       <form method="post" action="{{ url_for('loja_adicionar', id_doce=p['id']) }}">
         <button type="submit" class="btn btn-adicionar">
-          <!-- sacola -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M5 8h14l-1 13H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>
+          <!-- o mesmo carrinho do topo da pagina -->
+          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M2.5 4H5l1.2 3"/>
+            <path class="preencher" d="M6.2 7H20.5l-2 7.3a1 1 0 0 1-1 .7H8.6a1 1 0 0 1-1-.8z"/>
+            <circle class="roda" cx="9.5" cy="19.5" r="1.6"/>
+            <circle class="roda" cx="17" cy="19.5" r="1.6"/>
           </svg>
           Adicionar
         </button>

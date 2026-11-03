@@ -165,14 +165,60 @@
     <!-- desenhos da apresentacao nos dois cantos do rodape -->
     <img class="rodape-ornamento esquerda" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
     <img class="rodape-ornamento direita" src="{{ url_for('static', filename='img/ornamento-bege.png') }}" alt="">
-    <img class="rodape-logo" src="{{ url_for('static', filename='img/logo-creme.png') }}" alt="">
-    <p class="rodape-slogan">Doces com história.</p>
-    <p>Quilombo Doces &mdash; feitos com carinho.</p>
-    <p>
-      <a href="https://wa.me/{{ whatsapp }}" target="_blank">Fale com a gente no WhatsApp</a>
-      &middot;
-      <a href="https://www.instagram.com/quilombo.doces/" target="_blank">@quilombo.doces</a>
-    </p>
+
+    <div class="rodape-conteudo">
+      <!-- marca: logo, nome e slogan -->
+      <div class="rodape-marca">
+        <a class="rodape-logo" href="{{ url_for('loja') }}">
+          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="">
+          <span>
+            <span class="rodape-nome">Quilombo</span>
+            <span class="rodape-sub">Doces</span>
+          </span>
+        </a>
+        <p class="rodape-slogan">Doces com história.</p>
+        <p class="rodape-texto">Doces artesanais feitos com carinho, com receitas de família e o sabor da nossa ancestralidade.</p>
+      </div>
+
+      <!-- links do site -->
+      <nav class="rodape-coluna" aria-label="Rodapé">
+        <h4>Navegue</h4>
+        <a href="{{ url_for('loja') }}">Início</a>
+        <a href="{{ url_for('loja_produtos') }}">Produtos</a>
+        <a href="{{ url_for('loja_eventos') }}">Eventos</a>
+        <a href="{{ url_for('loja_sobre') }}">Sobre</a>
+        <a href="{{ url_for('contas.minha_conta') }}">Minha conta</a>
+      </nav>
+
+      <!-- contato -->
+      <div class="rodape-coluna">
+        <h4>Fale com a gente</h4>
+        <a class="rodape-icone" href="https://wa.me/{{ whatsapp }}" target="_blank">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.3-4.1A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.5-2-1-1 .8a5 5 0 0 1-2.8-2.8l.8-1-1-2z"/></svg>
+          WhatsApp
+        </a>
+        <a class="rodape-icone" href="https://www.instagram.com/quilombo.doces/" target="_blank">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="0.6"/></svg>
+          @quilombo.doces
+        </a>
+      </div>
+
+      <!-- como funciona a compra -->
+      <div class="rodape-coluna">
+        <h4>Compre tranquilo</h4>
+        <p class="rodape-icone">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 9-9 9-9-9z"/><path d="M8.5 12h7"/></svg>
+          Pagamento por Pix
+        </p>
+        <p class="rodape-icone">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 6.5h11v9h-11z"/><path d="M13.5 9.5h4l3 3v3h-7"/><circle cx="6.5" cy="17.5" r="1.7"/><circle cx="17" cy="17.5" r="1.7"/></svg>
+          Entrega na sua casa
+        </p>
+      </div>
+    </div>
+
+    <!-- faixa de baixo -->
+    <p class="rodape-base">&copy; {{ ano_atual() }} Quilombo Doces &middot; Todos os direitos reservados</p>
   </footer>
 
 </body>

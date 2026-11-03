@@ -1,10 +1,11 @@
-<!-- aba categorias: criar e excluir as categorias dos doces -->
+<!-- categorias dos produtos: criar, excluir e ordenar as categorias dos doces
+     (a ordem daqui e a ordem da pagina Produtos da loja) -->
 {% extends "base.html" %}
 
-{% block titulo %}Categorias{% endblock %}
+{% block titulo %}Categorias dos produtos{% endblock %}
 
 {% block conteudo %}
-  <h2>Categorias</h2>
+  <h2>Categorias dos produtos</h2>
 
   {% if msg %}
     <p class="sucesso">{{ msg }}</p>
@@ -26,14 +27,31 @@
   </form>
 
   {% if categorias %}
+    <p class="dica">Esta é a ordem das categorias na página <b>Produtos</b> da loja.
+       Use as setas para mudar: a de cima aparece primeiro.</p>
     <table>
       <tr>
+        <th>Ordem</th>
         <th>Categoria</th>
         <th>Doces</th>
         <th></th>
       </tr>
       {% for c in categorias %}
         <tr>
+          <td>
+            <!-- subir / descer na ordem da loja -->
+            <div class="ordem-categoria">
+              <span class="secao-posicao">{{ loop.index }}º</span>
+              <form method="post" action="{{ url_for('mover_categoria', id_categoria=c['id'], direcao='subir') }}">
+                <button type="submit" class="seta-ordem" title="Subir" aria-label="Subir {{ c['nome'] }}"
+                        {% if loop.first %}disabled{% endif %}>&uarr;</button>
+              </form>
+              <form method="post" action="{{ url_for('mover_categoria', id_categoria=c['id'], direcao='descer') }}">
+                <button type="submit" class="seta-ordem" title="Descer" aria-label="Descer {{ c['nome'] }}"
+                        {% if loop.last %}disabled{% endif %}>&darr;</button>
+              </form>
+            </div>
+          </td>
           <td><b>{{ c['nome'] }}</b></td>
           <td>{{ c['qtd'] }} doce(s)</td>
           <td>

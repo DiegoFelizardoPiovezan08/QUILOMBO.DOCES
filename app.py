@@ -236,8 +236,6 @@ def ler_formulario():
         "nome": request.form.get("nome", "").strip(),
         "preco": request.form.get("preco", "").strip(),
         "descricao": request.form.get("descricao", "").strip(),
-        # caixinha marcada = 1 (vai para os Destaques), desmarcada = 0
-        "destaque": 1 if request.form.get("destaque") else 0,
         "estoque": request.form.get("estoque", "").strip(),
         # id da categoria escolhida ("" = sem categoria)
         "categoria_id": request.form.get("categoria_id", "").strip(),
@@ -245,15 +243,18 @@ def ler_formulario():
 
 
 def categorias_cadastradas():
-    """Todas as categorias, em ordem alfabetica (usada no formulario do doce)."""
+    """Todas as categorias, na ordem escolhida (usada no formulario do doce)."""
     conn = conectar_banco()
-    categorias = conn.execute('SELECT * FROM categorias ORDER BY nome').fetchall()
+    categorias = conn.execute('SELECT * FROM categorias ORDER BY posicao, nome').fetchall()
     conn.close()
     return categorias
 
 
 # deixa o formulario chamar categorias_cadastradas() direto no template
 app.jinja_env.globals["categorias_cadastradas"] = categorias_cadastradas
+
+# ano atual, para o "(c) 2026" do rodape da loja mudar sozinho todo ano
+app.jinja_env.globals["ano_atual"] = lambda: date.today().year
 
 # --------------------------------------------------------------- CADASTRAR
 
@@ -282,12 +283,11 @@ def novo():
     imagem = salvar_imagem(arquivo) if arquivo else None
 
     conn.execute(
-        'INSERT INTO doces (nome, preco, descricao, destaque, estoque, categoria_id, imagem) '
-        'VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO doces (nome, preco, descricao, estoque, categoria_id, imagem) '
+        'VALUES (?, ?, ?, ?, ?, ?)',
         (dados["nome"].title(),
          round(float(dados["preco"].replace(",", ".")), 2),
          dados["descricao"],
-         dados["destaque"],
          int(dados["estoque"]),
          int(dados["categoria_id"]) if dados["categoria_id"] else None,
          imagem))
@@ -344,12 +344,11 @@ def editar(id_doce):
         imagem = None
 
     conn.execute(
-        'UPDATE doces SET nome = ?, preco = ?, descricao = ?, destaque = ?, '
+        'UPDATE doces SET nome = ?, preco = ?, descricao = ?, '
         'estoque = ?, categoria_id = ?, imagem = ? WHERE id = ?',
         (dados["nome"].title(),
          round(float(dados["preco"].replace(",", ".")), 2),
          dados["descricao"],
-         dados["destaque"],
          int(dados["estoque"]),
          int(dados["categoria_id"]) if dados["categoria_id"] else None,
          imagem,
@@ -361,30 +360,6 @@ def editar(id_doce):
 
 
 # --------------------------------------------------------------- EXCLUIR
-@app.route("/doce/<int:id_doce>/destaque", methods=["POST"])
-def alternar_destaque(id_doce):
-    """Botao da estrela na lista: coloca ou tira o doce dos Destaques."""
-    conn = conectar_banco()
-    doce = conn.execute('SELECT * FROM doces WHERE id = ?',
-                        (id_doce,)).fetchone()
-
-    if doce is None:
-        conn.close()
-        return render_template("erro.html",
-                               mensagem=f"Nao existe doce com id {id_doce}."), 404
-
-    novo = 0 if doce["destaque"] else 1
-    conn.execute('UPDATE doces SET destaque = ? WHERE id = ?', (novo, id_doce))
-    conn.commit()
-    conn.close()
-
-    if novo:
-        msg = f"{doce['nome']} agora aparece nos Destaques da loja."
-    else:
-        msg = f"{doce['nome']} saiu dos Destaques (continua em Produtos)."
-    return redirect(url_for("listar", msg=msg))
-
-
 @app.route("/doce/<int:id_doce>/excluir", methods=["POST"])
 def excluir(id_doce):
     """Exclui o doce. Aceita SOMENTE POST — um link nao pode apagar dados."""
@@ -398,6 +373,7 @@ def excluir(id_doce):
                                mensagem=f"Nao existe doce com id {id_doce}."), 404
 
     conn.execute('DELETE FROM doces WHERE id = ?', (id_doce,))
+    conn.execute('DELETE FROM secao_doces WHERE doce_id = ?', (id_doce,))   # sai das colecoes
     conn.commit()
     conn.close()
     apagar_imagem(doce["imagem"])
@@ -662,17 +638,20 @@ def admin_sair():
 
 @app.route("/loja")
 def loja():
-    """Pagina inicial da loja: carrossel, destaques e mais vendidos."""
+    """Pagina inicial da loja: carrossel e as secoes (Mais vendidos e as
+    colecoes criadas no admin), na ordem escolhida na aba Pagina inicial."""
     conn = conectar_banco()
     # cada foto vira {"arquivo": caminho dentro de static, "legenda": texto,
     # "celular": versao quadrada para o celular (ou None)}
     slides = [{"arquivo": "uploads/" + s["imagem"], "legenda": s["legenda"],
                "celular": "uploads/" + s["imagem_celular"] if s["imagem_celular"] else None}
               for s in conn.execute('SELECT * FROM carrossel ORDER BY id')]
-        # so os doces marcados como destaque (todos continuam na aba Produtos)
-    doces = conn.execute(
-        'SELECT * FROM doces WHERE destaque = 1 ORDER BY nome').fetchall()
-    vendidos = mais_vendidos(conn)
+    # cada secao vira {"nome", "tipo", "doces"}; secao sem doce nao aparece
+    secoes = []
+    for secao in conn.execute('SELECT * FROM secoes ORDER BY posicao'):
+        secoes.append({"nome": secao["nome"], "tipo": secao["tipo"],
+                       "doces": doces_da_secao(conn, secao)})
+    secoes = [s for s in secoes if s["doces"]]
     conn.close()
 
     # nenhuma foto cadastrada na aba Carrossel: usa as fotos de static/img
@@ -683,8 +662,17 @@ def loja():
             if os.path.exists(os.path.join(app.static_folder, arquivo)):
                 slides.append({"arquivo": arquivo, "legenda": "", "celular": None})
 
-    return render_template("loja.html", slides=slides, doces=doces,
-                           vendidos=vendidos)
+    return render_template("loja.html", slides=slides, secoes=secoes)
+
+
+def doces_da_secao(conn, secao):
+    """Os doces de uma secao da pagina inicial."""
+    if secao["tipo"] == "mais_vendidos":
+        return mais_vendidos(conn)
+    # colecao: os doces que o admin escolheu
+    return conn.execute(
+        'SELECT doces.* FROM doces JOIN secao_doces ON secao_doces.doce_id = doces.id '
+        'WHERE secao_doces.secao_id = ? ORDER BY doces.nome', (secao["id"],)).fetchall()
 
 
 def mais_vendidos(conn, quantos=4):
@@ -738,7 +726,7 @@ def loja_produtos():
     # botoes de categoria: so as que ja tem pelo menos um doce
     categorias = conn.execute(
         'SELECT * FROM categorias WHERE id IN '
-        '(SELECT categoria_id FROM doces) ORDER BY nome').fetchall()
+        '(SELECT categoria_id FROM doces) ORDER BY posicao, nome').fetchall()
 
     filtros, valores = [], []
     if termo:
@@ -1701,6 +1689,124 @@ def excluir_frete(id_faixa):
     return redirect(url_for("frete", msg="Faixa excluída."))
 
 
+# ----------------------------------------------------------- PAGINA INICIAL (ADMIN)
+# Secoes da pagina inicial da loja: Mais vendidos e as colecoes
+# que o admin cria (ex.: "Colecao de Natal"), com os doces que quiser.
+# Os botoes de subir/descer mudam a ordem: mais em cima = mais destaque.
+
+@app.route("/pagina-inicial", methods=["GET", "POST"])
+def pagina_inicial():
+    """Lista as secoes na ordem da loja; POST cria uma colecao nova."""
+    conn = conectar_banco()
+    erro = ""
+    dados = {"nome": "", "doces": []}
+
+    if request.method == "POST":
+        dados = {"nome": request.form.get("nome", "").strip(),
+                 "doces": [int(i) for i in request.form.getlist("doces") if i.isdigit()]}
+        erro = salvar_colecao(conn, dados)
+        if not erro:
+            conn.close()
+            return redirect(url_for("pagina_inicial", msg=f"\"{dados['nome']}\" criada!"))
+
+    secoes = conn.execute(
+        'SELECT secoes.*, COUNT(secao_doces.doce_id) AS qtd FROM secoes '
+        'LEFT JOIN secao_doces ON secao_doces.secao_id = secoes.id '
+        'GROUP BY secoes.id ORDER BY secoes.posicao').fetchall()
+    todos = conn.execute('SELECT * FROM doces ORDER BY nome').fetchall()
+    conn.close()
+    return render_template("pagina_inicial.html", secoes=secoes, todos=todos,
+                           dados=dados, erro=erro,
+                           msg=request.args.get("msg", "")), (400 if erro else 200)
+
+
+def salvar_colecao(conn, dados, id_secao=None):
+    """Cria (ou altera, se tiver id_secao) uma colecao. Devolve o erro ou ""."""
+    if len(dados["nome"]) < 2:
+        return "Dê um nome para a coleção (ex.: Coleção de Natal)."
+    if not dados["doces"]:
+        return "Escolha pelo menos um doce para a coleção."
+
+    if id_secao is None:
+        # a colecao nova entra no fim da pagina (depois pode subir)
+        ultima = conn.execute('SELECT COALESCE(MAX(posicao), 0) FROM secoes').fetchone()[0]
+        id_secao = conn.execute("INSERT INTO secoes (nome, tipo, posicao) VALUES (?, 'colecao', ?)",
+                                (dados["nome"], ultima + 1)).lastrowid
+    else:
+        conn.execute('UPDATE secoes SET nome = ? WHERE id = ?', (dados["nome"], id_secao))
+        conn.execute('DELETE FROM secao_doces WHERE secao_id = ?', (id_secao,))
+    conn.executemany('INSERT INTO secao_doces (secao_id, doce_id) VALUES (?, ?)',
+                     [(id_secao, d) for d in dados["doces"]])
+    conn.commit()
+    return ""
+
+
+@app.route("/pagina-inicial/<int:id_secao>/editar", methods=["GET", "POST"])
+def editar_colecao(id_secao):
+    """Muda o nome e os doces de uma colecao."""
+    conn = conectar_banco()
+    secao = conn.execute("SELECT * FROM secoes WHERE id = ? AND tipo = 'colecao'",
+                         (id_secao,)).fetchone()
+    if secao is None:
+        conn.close()
+        return render_template("erro.html", mensagem="Coleção não encontrada."), 404
+
+    erro = ""
+    if request.method == "POST":
+        dados = {"nome": request.form.get("nome", "").strip(),
+                 "doces": [int(i) for i in request.form.getlist("doces") if i.isdigit()]}
+        erro = salvar_colecao(conn, dados, id_secao)
+        if not erro:
+            conn.close()
+            return redirect(url_for("pagina_inicial", msg=f"\"{dados['nome']}\" salva!"))
+    else:
+        dados = {"nome": secao["nome"],
+                 "doces": [l["doce_id"] for l in conn.execute(
+                     'SELECT doce_id FROM secao_doces WHERE secao_id = ?', (id_secao,))]}
+
+    todos = conn.execute('SELECT * FROM doces ORDER BY nome').fetchall()
+    conn.close()
+    return render_template("colecao.html", secao=secao, todos=todos, dados=dados,
+                           erro=erro), (400 if erro else 200)
+
+
+@app.route("/pagina-inicial/<int:id_secao>/<direcao>", methods=["POST"])
+def mover_secao(id_secao, direcao):
+    """Botoes de subir/descer: troca a secao de lugar com a vizinha."""
+    if direcao not in ("subir", "descer"):
+        return render_template("erro.html", mensagem="Ação inválida."), 404
+    conn = conectar_banco()
+    secao = conn.execute('SELECT * FROM secoes WHERE id = ?', (id_secao,)).fetchone()
+    if secao is not None:
+        if direcao == "subir":
+            vizinha = conn.execute('SELECT * FROM secoes WHERE posicao < ? '
+                                   'ORDER BY posicao DESC LIMIT 1', (secao["posicao"],)).fetchone()
+        else:
+            vizinha = conn.execute('SELECT * FROM secoes WHERE posicao > ? '
+                                   'ORDER BY posicao LIMIT 1', (secao["posicao"],)).fetchone()
+        if vizinha is not None:
+            conn.execute('UPDATE secoes SET posicao = ? WHERE id = ?', (vizinha["posicao"], secao["id"]))
+            conn.execute('UPDATE secoes SET posicao = ? WHERE id = ?', (secao["posicao"], vizinha["id"]))
+            conn.commit()
+    conn.close()
+    return redirect(url_for("pagina_inicial"))
+
+
+@app.route("/pagina-inicial/<int:id_secao>/excluir", methods=["POST"])
+def excluir_colecao(id_secao):
+    """Apaga uma colecao (os doces continuam cadastrados). Mais vendidos
+    nao pode ser apagada."""
+    conn = conectar_banco()
+    secao = conn.execute("SELECT * FROM secoes WHERE id = ? AND tipo = 'colecao'",
+                         (id_secao,)).fetchone()
+    if secao is not None:
+        conn.execute('DELETE FROM secao_doces WHERE secao_id = ?', (id_secao,))
+        conn.execute('DELETE FROM secoes WHERE id = ?', (id_secao,))
+        conn.commit()
+    conn.close()
+    return redirect(url_for("pagina_inicial", msg="Coleção excluída."))
+
+
 # ----------------------------------------------------------- CATEGORIAS (ADMIN)
 
 @app.route("/categorias", methods=["GET", "POST"])
@@ -1718,7 +1824,9 @@ def categorias():
                           (nome.lower(),)).fetchone():
             erro = "Ja existe uma categoria com esse nome."
         else:
-            conn.execute('INSERT INTO categorias (nome) VALUES (?)', (nome,))
+            # a categoria nova entra no fim da lista (depois pode subir)
+            ultima = conn.execute('SELECT COALESCE(MAX(posicao), 0) FROM categorias').fetchone()[0]
+            conn.execute('INSERT INTO categorias (nome, posicao) VALUES (?, ?)', (nome, ultima + 1))
             conn.commit()
             conn.close()
             return redirect(url_for("categorias",
@@ -1728,11 +1836,34 @@ def categorias():
     lista = conn.execute(
         'SELECT categorias.*, COUNT(doces.id) AS qtd FROM categorias '
         'LEFT JOIN doces ON doces.categoria_id = categorias.id '
-        'GROUP BY categorias.id ORDER BY categorias.nome').fetchall()
+        'GROUP BY categorias.id ORDER BY categorias.posicao, categorias.nome').fetchall()
     conn.close()
 
     return render_template("categorias.html", categorias=lista, erro=erro,
                            nome=nome, msg=request.args.get("msg", "")), (400 if erro else 200)
+
+
+@app.route("/categoria/<int:id_categoria>/<direcao>", methods=["POST"])
+def mover_categoria(id_categoria, direcao):
+    """Botoes de subir/descer: troca a categoria de lugar com a vizinha
+    (a de cima aparece primeiro na pagina Produtos da loja)."""
+    if direcao not in ("subir", "descer"):
+        return render_template("erro.html", mensagem="Ação inválida."), 404
+    conn = conectar_banco()
+    cat = conn.execute('SELECT * FROM categorias WHERE id = ?', (id_categoria,)).fetchone()
+    if cat is not None:
+        if direcao == "subir":
+            vizinha = conn.execute('SELECT * FROM categorias WHERE posicao < ? '
+                                   'ORDER BY posicao DESC LIMIT 1', (cat["posicao"],)).fetchone()
+        else:
+            vizinha = conn.execute('SELECT * FROM categorias WHERE posicao > ? '
+                                   'ORDER BY posicao LIMIT 1', (cat["posicao"],)).fetchone()
+        if vizinha is not None:
+            conn.execute('UPDATE categorias SET posicao = ? WHERE id = ?', (vizinha["posicao"], cat["id"]))
+            conn.execute('UPDATE categorias SET posicao = ? WHERE id = ?', (cat["posicao"], vizinha["id"]))
+            conn.commit()
+    conn.close()
+    return redirect(url_for("categorias"))
 
 
 @app.route("/categoria/<int:id_categoria>/excluir", methods=["POST"])

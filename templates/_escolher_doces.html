@@ -1,0 +1,23 @@
+{# campos de uma colecao: nome + os doces para marcar (usado com include,
+   com as variaveis "dados" e "todos") #}
+<p>
+  <label for="nome-colecao">Nome da coleção</label>
+  <input type="text" id="nome-colecao" name="nome" value="{{ dados.nome }}"
+         placeholder="Ex.: Coleção de Natal, Presentes, Lançamentos">
+</p>
+<p class="rotulo-doces">Doces da coleção <span class="dica">(marque quantos quiser)</span></p>
+<div class="escolher-doces">
+  {% for d in todos %}
+    <label class="doce-opcao">
+      <input type="checkbox" name="doces" value="{{ d['id'] }}" {% if d['id'] in dados.doces %}checked{% endif %}>
+      {% if d['imagem'] %}
+        <img src="{{ url_for('static', filename='uploads/' ~ d['imagem']) }}" alt="">
+      {% else %}
+        <span class="doce-sem-foto">{{ d['nome'][0]|upper }}</span>
+      {% endif %}
+      <span>{{ d['nome'] }}</span>
+    </label>
+  {% else %}
+    <p class="vazio">Nenhum doce cadastrado ainda.</p>
+  {% endfor %}
+</div>
