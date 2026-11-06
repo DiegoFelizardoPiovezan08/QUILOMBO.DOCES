@@ -121,15 +121,23 @@
       <h2 class="secao-titulo">{{ secao.nome }}</h2>
       {% if loop.first %}<a href="{{ url_for('loja_produtos') }}">Ver todos os produtos &rarr;</a>{% endif %}
     </div>
-    <div class="grade">
-      {% for p in secao.doces %}
-        {% include "_card_doce.html" %}
-      {% endfor %}
+    <!-- os doces da secao ficam numa fileira so, que roda para o lado
+         (no celular arrastando com o dedo; no computador pelas setas,
+         ligadas pelo script do base_loja.html) -->
+    <div class="rolagem">
+      <button type="button" class="rolagem-seta anterior" aria-label="Ver anteriores" hidden>&lsaquo;</button>
+      <div class="grade grade-rolagem">
+        {% for p in secao.doces %}
+          {% include "_card_doce.html" %}
+        {% endfor %}
+      </div>
+      <button type="button" class="rolagem-seta proxima" aria-label="Ver mais" hidden>&rsaquo;</button>
     </div>
   {% else %}
     <p class="vazio">Em breve, novidades por aqui!</p>
     <p class="centro"><a class="btn btn-principal" href="{{ url_for('loja_produtos') }}">Ver todos os produtos</a></p>
   {% endfor %}
+
 
 
 {% endblock %}

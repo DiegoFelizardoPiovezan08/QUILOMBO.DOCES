@@ -221,5 +221,23 @@
     <p class="rodape-base">&copy; {{ ano_atual() }} Quilombo Doces &middot; Todos os direitos reservados</p>
   </footer>
 
+  <script>
+    // fileiras de doces que rodam para o lado (pagina inicial e Produtos):
+    // as setas andam uma "tela" e somem quando nao tem mais para onde ir
+    document.querySelectorAll('.rolagem').forEach(function (caixa) {
+      var fila = caixa.querySelector('.grade-rolagem');
+      var antes = caixa.querySelector('.anterior');
+      var depois = caixa.querySelector('.proxima');
+      function atualizar() {
+        antes.hidden = fila.scrollLeft <= 4;
+        depois.hidden = fila.scrollLeft + fila.clientWidth >= fila.scrollWidth - 4;
+      }
+      antes.onclick = function () { fila.scrollBy({ left: -fila.clientWidth, behavior: 'smooth' }); };
+      depois.onclick = function () { fila.scrollBy({ left: fila.clientWidth, behavior: 'smooth' }); };
+      fila.addEventListener('scroll', atualizar, { passive: true });
+      window.addEventListener('resize', atualizar);
+      atualizar();
+    });
+  </script>
 </body>
 </html>

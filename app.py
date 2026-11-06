@@ -16,7 +16,7 @@ from flask import (Flask, request, render_template, redirect, url_for,
                    session, flash)
 from werkzeug.security import check_password_hash
 from cadastro_sqlite import conectar_banco, validar_preco
-from contas import contas, cliente_atual, endereco_completo
+from contas import contas, cliente_atual, endereco_completo, conta_e_admin
 from geolocalizacao import coordenadas_do_cep, distancia_km
 from urllib.parse import quote
 
@@ -252,6 +252,7 @@ def categorias_cadastradas():
 
 # deixa o formulario chamar categorias_cadastradas() direto no template
 app.jinja_env.globals["categorias_cadastradas"] = categorias_cadastradas
+app.jinja_env.globals["conta_e_admin"] = conta_e_admin   # menu do admin (base.html)
 
 # ano atual, para o "(c) 2026" do rodape da loja mudar sozinho todo ano
 app.jinja_env.globals["ano_atual"] = lambda: date.today().year
@@ -579,7 +580,8 @@ def proteger_admin():
             or endpoint.startswith("loja")
             or endpoint.startswith("contas.")
             or endpoint in PAGINAS_PUBLICAS
-            or session.get("admin_id")):
+            or session.get("admin_id")
+            or conta_e_admin()):                  # conta de admin logada na loja: entra direto
         return None
 
     # quem abre o endereco principal do site (/) sem ser admin vai para a loja
@@ -593,7 +595,7 @@ def proteger_admin():
 @app.route("/admin", methods=["GET", "POST"])
 def admin_entrar():
     """Tela de login do administrador: /admin"""
-    if session.get("admin_id"):
+    if session.get("admin_id") or conta_e_admin():
         return redirect(url_for("listar"))
 
     # para onde voltar depois de entrar (so enderecos do proprio site)
@@ -631,6 +633,8 @@ def admin_sair():
     cliente, se houver, continuam)."""
     session.pop("admin_id", None)
     session.pop("admin_usuario", None)
+    if conta_e_admin():                   # entrou pela conta da loja: volta para a loja
+        return redirect(url_for("loja"))
     return redirect(url_for("admin_entrar"))
 
 

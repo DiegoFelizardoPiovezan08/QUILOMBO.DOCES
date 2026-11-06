@@ -14,15 +14,27 @@
     {% if termo %}<a class="btn btn-contorno" href="{{ url_for('loja_produtos') }}">Limpar</a>{% endif %}
   </form>
 
-  <!-- botoes das categorias (so aparecem as que tem doces) -->
+  <!-- botoes das categorias (so aparecem as que tem doces), numa linha so
+       que roda para o lado; as setas sao ligadas pelo script do base_loja.html -->
   {% if categorias %}
-    <nav class="categorias-filtro">
+    <div class="rolagem rolagem-filtro">
+    <button type="button" class="rolagem-seta anterior" aria-label="Ver categorias anteriores" hidden>&lsaquo;</button>
+    <nav class="categorias-filtro grade-rolagem">
       <a href="{{ url_for('loja_produtos') }}" {% if not id_categoria %}class="ativo"{% endif %}>Todos</a>
       {% for c in categorias %}
         <a href="{{ url_for('loja_produtos', categoria=c['id']) }}"
            {% if id_categoria == c['id'] %}class="ativo"{% endif %}>{{ c['nome'] }}</a>
       {% endfor %}
     </nav>
+    <button type="button" class="rolagem-seta proxima" aria-label="Ver mais categorias" hidden>&rsaquo;</button>
+    </div>
+    <script>
+      // categoria escolhida fora da tela (ex.: a ultima no celular): rola ate ela
+      (function () {
+        var ativo = document.querySelector('.categorias-filtro a.ativo');
+        if (ativo) ativo.parentElement.scrollLeft = ativo.offsetLeft - 20;
+      })();
+    </script>
   {% endif %}
 
   {% if termo %}
@@ -33,10 +45,16 @@
     <!-- "Todos": um bloco para cada categoria -->
     {% for titulo, lista in grupos %}
       <h3 class="categoria-titulo">{{ titulo }}</h3>
-      <div class="grade">
-        {% for p in lista %}
-          {% include "_card_doce.html" %}
-        {% endfor %}
+      <!-- os doces da categoria numa fileira que roda para o lado
+           (as setas sao ligadas pelo script do base_loja.html) -->
+      <div class="rolagem">
+        <button type="button" class="rolagem-seta anterior" aria-label="Ver anteriores" hidden>&lsaquo;</button>
+        <div class="grade grade-rolagem">
+          {% for p in lista %}
+            {% include "_card_doce.html" %}
+          {% endfor %}
+        </div>
+        <button type="button" class="rolagem-seta proxima" aria-label="Ver mais" hidden>&rsaquo;</button>
       </div>
     {% endfor %}
   {% elif doces %}

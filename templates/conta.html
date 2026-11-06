@@ -6,9 +6,15 @@
 
   <div class="secao-cabecalho">
     <h2 class="secao-titulo">Minha conta</h2>
-    <form method="post" action="{{ url_for('contas.sair') }}">
-      <button type="submit" class="btn btn-contorno">Sair</button>
-    </form>
+    <div class="conta-botoes">
+      {% if e_admin %}
+        <!-- so aparece nas contas de quem cuida da loja (CPFS_ADMIN, em contas.py) -->
+        <a class="btn btn-principal" href="{{ url_for('listar') }}">Ir para a área do admin &rarr;</a>
+      {% endif %}
+      <form method="post" action="{{ url_for('contas.sair') }}">
+        <button type="submit" class="btn btn-contorno">Sair</button>
+      </form>
+    </div>
   </div>
 
   <div class="conta">

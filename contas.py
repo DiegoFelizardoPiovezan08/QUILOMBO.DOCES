@@ -145,6 +145,19 @@ def validar_cadastro(dados, conn, id_atual=None, senha_obrigatoria=True):
     return erros
 
 
+# CPFs das contas de cliente que tambem cuidam da loja: logadas na loja,
+# elas veem o botao "Ir para a área do admin" em "Minha conta" e entram no
+# admin direto, sem a tela de usuario e senha do admin.
+# Para colocar outra pessoa, e so somar o CPF aqui (so os numeros).
+CPFS_ADMIN = {"39656059840"}       # Leonardo Matsuda
+
+
+def conta_e_admin():
+    """True se quem esta logado na loja e uma conta de admin (CPFS_ADMIN)."""
+    cliente = cliente_atual()
+    return cliente is not None and so_numeros(cliente["cpf"]) in CPFS_ADMIN
+
+
 # --------------------------------------------------------------- PAGINAS
 
 @contas.route("/conta")
@@ -160,7 +173,8 @@ def minha_conta():
         (cliente["id"],)).fetchall()
     conn.close()
 
-    return render_template("conta.html", cliente=cliente, pedidos=pedidos)
+    return render_template("conta.html", cliente=cliente, pedidos=pedidos,
+                           e_admin=conta_e_admin())
 
 
 @contas.route("/conta/entrar", methods=["GET", "POST"])

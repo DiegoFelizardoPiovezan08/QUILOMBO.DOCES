@@ -578,12 +578,12 @@ a { text-decoration: none; }
   font-family: var(--fonte-marca);
   font-weight: normal;
 }
-.card-img { aspect-ratio: 1 / 1; font-size: 4rem; }   /* foto quadrada */
+.card-img { aspect-ratio: 2 / 3; font-size: 4rem; }   /* foto em pe (2:3, ex.: 854 x 1280) */
 .card-img:hover { color: var(--raiz); }
 
-/* fotos dos produtos: todas quadradas e do mesmo tamanho. A foto preenche
-   o quadrado; se nao for quadrada, as sobras das bordas sao cortadas
-   (sempre a partir do centro). Ideal: fotos quadradas, ex.: 1000 x 1000 */
+/* fotos dos produtos nos cards: todas em pe (2:3) e do mesmo tamanho. A foto
+   preenche o quadro; se tiver outro formato, so as sobras das bordas sao
+   cortadas (a partir do centro). Ideal: fotos 2:3, ex.: 854 x 1280 */
 .card-img img,
 .produto-img img,
 .item-img img {
@@ -688,11 +688,15 @@ a { text-decoration: none; }
   padding: 28px;
 }
 
+/* pagina do doce: a foto aparece inteira, no formato original (sem cortar).
+   Sem foto, o quadro fica em pe (2:3) com a inicial do doce */
 .produto-img {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 2 / 3;
   border-radius: var(--raio-grande);
   font-size: 7rem;
 }
+.produto-img:has(img) { aspect-ratio: auto; align-self: start; background: none; }
+.produto-img img { height: auto; max-height: 80vh; object-fit: contain; }
 
 .produto-info {
   display: flex;
@@ -1230,6 +1234,27 @@ a { text-decoration: none; }
 }
 .dados-cliente .dados-entrega { text-align: left; width: 100%; }
 
+/* Pix automatico: aviso "Esperando o pagamento..." com uma bolinha piscando */
+.pix-esperando {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  background: var(--areia);
+  font-size: 0.92rem;
+  text-align: left;
+}
+.ponto-esperando {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  background: var(--ouro);
+  border-radius: 50% !important;
+  animation: piscar 1.2s ease-in-out infinite;
+}
+@keyframes piscar { 50% { opacity: 0.25; } }
+
 /* "Entrega": quadro com a distancia e o preco do frete */
 .dados-cliente .entrega-titulo { margin: 22px 0 10px; font-size: 1.2rem; }
 .opcoes-entrega { display: flex; flex-direction: column; gap: 10px; width: 100%; }
@@ -1622,3 +1647,118 @@ a { text-decoration: none; }
 /* foto dos doces com os cantos levemente arredondados (so a foto) */
 .card-img,
 .produto-img { border-radius: 8px !important; }
+
+
+/* ======================================================================
+   CELULAR E TABLET (iPad): ajustes finais de tamanho
+   ====================================================================== */
+
+/* foto do doce na pagina do produto: inteira, mas sem passar da tela */
+.produto-img img { max-height: 70vh; }
+
+/* tablet (iPad em pe ~768px e deitado ~1024px) */
+@media (max-width: 1024px) {
+  .produto { gap: 24px; padding: 22px; }
+
+  /* rodape: marca em cima e as 3 colunas embaixo */
+  .rodape-conteudo { grid-template-columns: repeat(3, 1fr); gap: 26px 20px; }
+  .rodape-marca { grid-column: 1 / -1; text-align: center; }
+  .rodape-texto { margin: 0 auto; max-width: 460px; }
+}
+
+/* celular */
+@media (max-width: 760px) {
+  /* foto do doce menor, para o nome e o preco aparecerem sem rolar muito */
+  .produto-img img { max-height: 55vh; }
+  .produto { padding: 14px; gap: 16px; }
+  .produto-info h1 { font-size: 1.5rem; }
+
+  /* quantidade e botao "Adicionar ao carrinho" do tamanho da tela */
+  .produto-info form { flex-direction: row; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+  .produto-info form label { width: 100%; margin: 0; }
+  .produto-info form input[type="number"] { width: 80px; margin: 0; }
+  .produto-info form .btn { flex: 1; align-self: stretch; margin: 0; padding: 12px 10px; }
+
+  /* campos com letra de 16px: o iPhone nao da zoom sozinho ao tocar neles */
+  input, select, textarea { font-size: 16px !important; }
+
+  /* nomes nos cards: sem sobrar espaco embaixo de nome curto */
+  .card-corpo h3 { min-height: 0; }
+
+  /* rodape: as colunas em 2 */
+  .rodape-conteudo { grid-template-columns: 1fr 1fr; }
+}
+
+
+/* ======================================================================
+   FILEIRAS DA PAGINA INICIAL: os doces de cada secao numa linha so,
+   que roda para o lado (4 por vez no computador, 3 no iPad, 2 e um
+   pedacinho do proximo no celular, para mostrar que tem mais)
+   ====================================================================== */
+.rolagem { position: relative; }
+.grade.grade-rolagem {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 3 * 20px) / 4);
+  gap: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;            /* esconde a barra de rolagem */
+  padding-bottom: 4px;
+}
+.grade-rolagem::-webkit-scrollbar { display: none; }
+.grade-rolagem > * { scroll-snap-align: start; }
+
+/* setas redondas nos lados, na altura das fotos */
+.rolagem-seta {
+  position: absolute;
+  top: 34%;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50% !important;
+  background: var(--cacau);
+  color: var(--areia);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.rolagem-seta:hover { background: var(--terracota); }
+.rolagem-seta.anterior { left: -14px; }
+.rolagem-seta.proxima  { right: -14px; }
+.rolagem-seta[hidden] { display: none; }
+
+@media (max-width: 1024px) {
+  .grade.grade-rolagem { grid-auto-columns: calc((100% - 2 * 16px) / 3); gap: 16px; }
+}
+@media (max-width: 760px) {
+  .grade.grade-rolagem { grid-auto-columns: calc((100% - 12px) / 2.25); gap: 12px; }
+  .rolagem-seta { display: none; }   /* no celular arrasta com o dedo */
+}
+
+
+/* botoes das categorias (aba Produtos): uma linha so, que roda para o lado */
+.categorias-filtro.grade-rolagem {
+  margin: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  padding: 2px 0 4px;
+}
+.categorias-filtro.grade-rolagem::-webkit-scrollbar { display: none; }
+.categorias-filtro.grade-rolagem a { flex: 0 0 auto; white-space: nowrap; scroll-snap-align: start; }
+.rolagem-filtro { margin-bottom: 20px; }
+.rolagem-filtro .rolagem-seta { top: 50%; transform: translateY(-50%); width: 34px; height: 34px; font-size: 1.3rem; }
+.rolagem-filtro .rolagem-seta.anterior { left: -12px; }
+.rolagem-filtro .rolagem-seta.proxima { right: -12px; }
+
+
+/* "Minha conta": botoes do canto (admin e Sair) lado a lado */
+.conta-botoes { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.conta-botoes form { margin: 0; }

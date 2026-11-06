@@ -38,7 +38,7 @@
       </a>
     </h1>
     <nav>
-      {% if session.get('admin_id') %}
+      {% if session.get('admin_id') or conta_e_admin() %}
       <!-- opcoes para clicar na parte de cima da pagina (so para o admin logado) -->
       <a href="{{ url_for('listar') }}">Doces</a>
       <a href="{{ url_for('estoque') }}">Estoque</a>
@@ -48,7 +48,11 @@
       <a href="{{ url_for('frete') }}">Frete</a>
       <!-- Pedidos: o numero mostra quantos clientes avisaram que pagaram -->
       <a href="{{ url_for('pedidos') }}">Pedidos{% if pedidos_pendentes %} <span class="contador-pedidos">{{ pedidos_pendentes }}</span>{% endif %}</a>
-      <a href="{{ url_for('admin_sair') }}" title="Sair da área do administrador">Sair</a>
+      {% if not conta_e_admin() %}
+        <!-- "Sair" so para quem entrou com usuario e senha do admin; quem entrou
+             pela conta da loja sai pela propria conta (Minha conta -> Sair) -->
+        <a href="{{ url_for('admin_sair') }}" title="Sair da área do administrador">Sair</a>
+      {% endif %}
       {% endif %}
       <!-- botao que leva para a loja (so existe aqui, na area do administrador) -->
       <a class="botao-loja" href="{{ url_for('loja') }}">Ir para a loja &rarr;</a>
